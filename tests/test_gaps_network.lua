@@ -271,6 +271,7 @@ do
   F.run(3)
   check(node("SAM Mid ACE").parent == node("CMD Main [alt:Reserve GRN]"), "linked to the main post")
   check(node("SAM East").linked == false or node("SAM East").parent ~= node("CMD Reserve GRN"), "the standby post is no root")
+  F.run(300)                                     -- late in the mission: the delay counts from the loss, not from t = 0
   local t0 = F.time
   F.killGroup(F.groups["CMD Main [alt:Reserve GRN]"])
   F.fire({ id = world.event.S_EVENT_DEAD, initiator = F.groups["CMD Main [alt:Reserve GRN]"].units[1] })

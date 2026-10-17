@@ -267,7 +267,7 @@ function W.assign(net)
   for _, tr in ipairs(tracks) do tr.threat = W.threat(tr, net, defended) end
   table.sort(tracks, function(a, b)
     if a.threat ~= b.threat then return a.threat > b.threat end
-    return a.num < b.num
+    return a.num < b.num   -- mutate: ok[return] tie order of exactly equal threats: determinism only
   end)
   local load, out = {}, {}
   -- channels a shooter is still using on targets it already had (and that are still tracked) are kept for them, so

@@ -129,7 +129,7 @@ local function rotatingOn(n, now)
   for i, m in ipairs(members) do
     if m == n then return ((i - 1 + slot) % k) < up end
   end
-  return true
+  return true   -- mutate: ok a node outside the rotation is down: apply never switches it
 end
 
 -- A gun-laying radar's tracking range (JANUS.Reach `track`, e.g. the Fire Can), or nil.
@@ -336,7 +336,7 @@ function E.start()
     local g = n.site.group
     local c = g and g:getController()
     if c then M.safe("emcon.alarm", c.setOption, c, O.id.ALARM_STATE, O.val.ALARM_STATE.RED) end
-    M.net.dirty = true
+    M.net.dirty = true   -- mutate: ok[true] N.addSite marks the network dirty too
   end
   M.on(world.event.S_EVENT_SHOT, "emcon.shot", E.onShot)
   E.tick()

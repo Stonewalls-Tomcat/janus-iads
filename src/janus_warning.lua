@@ -23,7 +23,7 @@ local function protected(n)
   for _, u in ipairs(n.site.units or {}) do
     if u.rec and u.rec.role == "CRAM" then return true end
   end
-  return false
+  return false   -- mutate: ok[return] nil and false both read as unprotected
 end
 
 local function placeName(n)

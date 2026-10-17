@@ -78,7 +78,7 @@ end
 -- detection range, engagement range (doctrinal reach, never above the DCS figure), its low-level value, range class
 local function ranges(site)
   local det, eng, low, rclass = 0, 0, 0, "NONE"
-  local order = { NONE = 0, SR = 1, MR = 2, LR = 3 }
+  local order = { NONE = 0, SR = 1, MR = 2, LR = 3 }   -- mutate: ok[n] only the order matters
   for _, u in ipairs(site.units) do
     local r = u.rec
     if (r.detectionRange or 0) > det then det = r.detectionRange end
@@ -455,7 +455,7 @@ end
 -- ------------------------------------------------------------------ building, events
 function N.build()
   for _, site in ipairs(M.sites) do N.addSite(site) end
-  for _, n in ipairs(N.list) do n.pos = nodePos(n) or n.pos end
+  for _, n in ipairs(N.list) do n.pos = nodePos(n) or n.pos end   -- mutate: ok[or] N.update below sets every position again (refreshAlive)
   N.dirty = true
   N.update()
   local parts = {}
