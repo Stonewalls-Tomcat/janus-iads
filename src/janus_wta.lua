@@ -201,6 +201,7 @@ function W.rearm(n, why)
 end
 
 local SHOOTERS = { BATTERY = true, PD = true, NAVAL = true }   -- ships bid from their NAVAL_AD envelopes (Phase 4)
+W.SHOOTERS = SHOOTERS   -- EMCON cues these through their assignments
 local function shooterOK(n)
   return SHOOTERS[n.kind] and n.alive and n.working and n.powered and n.linked
     and not n.autonomous and (n.engageRange or 0) > 0 and n.pos ~= nil   -- mutate: ok W.pk rejects these too

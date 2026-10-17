@@ -206,6 +206,76 @@ do
   check(F.emitting("AAA KS-19 Belt"), "a doctrine without cued AAA keeps the Fire Can always on")
 end
 
+-- ---------------------------------------------------------------- 5a. geometry: site off the axis and on high ground
+do
+  -- SA-10 on a 1000 m plateau at z = 30 km; EW plot of a target 300 m above the site (low ring 0.8 x 40 = 32 km)
+  local function site()
+    F.reset()
+    base()
+    F.addGroup{ name = "SAM SA-10 Hill", units = { { type = "S-300PS 40B6M tr", x = 50000, z = 30000, alt = 1000 },
+      { type = "S-300PS 5P85C ln", x = 50300, z = 30000, alt = 1000 } } }
+  end
+  site()
+  local b = bandit("Low 1", 50000, 65000, 1300)    -- 35 km east of the site, 300 m above it: outside the low ring
+  load()
+  F.sees["EW North"] = { b }
+  F.run(60)
+  check(not F.emitting("SAM SA-10 Hill"), "plateau site: a target 300 m above it at 35 km is low (dark)")
+  F.move(b, 50000, 58000)                          -- 28 km east
+  F.run(100)
+  check(F.emitting("SAM SA-10 Hill"), "plateau site: 28 km east, inside the low ring: up")
+  site()
+  b = bandit("High 1", 50000, 85000, 5000)          -- 55 km east, 4 km above the site: inside the 60 km high ring
+  load()
+  F.sees["EW North"] = { b }
+  F.run(60)
+  check(F.emitting("SAM SA-10 Hill"), "plateau site: a high target 55 km east is inside the high ring")
+end
+
+-- ---------------------------------------------------------------- 5b. a gun radar without a tracking range, and REACH overrides on guns
+do
+  F.reset()
+  base()
+  F.addGroup{ name = "AAA QF Belt", units = { { type = "Allies_Director", x = 50000, z = 0 }, { type = "QF_37_AA", x = 50100, z = 0 } } }
+  local b = bandit("Viper 1", 62000, 0)           -- 12 km: outside 0.8 x the 9 km gun reach
+  load()
+  F.sees["EW North"] = { b }
+  F.run(60)
+  check(not F.emitting("AAA QF Belt"), "a director with no tracking range waits for the gun ring (12 km: dark)")
+  F.move(b, 56000, 0)                              -- 6 km
+  F.run(100)
+  check(F.emitting("AAA QF Belt"), "6 km: inside 0.8 x 9 km: up")
+  check(not F.logContains("ERROR JANUS"), "no errors")
+end
+do
+  F.reset()
+  base()
+  F.addGroup{ name = "AAA KS-19 Belt", units = { { type = "SON_9", x = 50000, z = 0 }, { type = "KS-19", x = 50100, z = 0 } } }
+  local J = load({ REACH = { ["KS-19"] = { hi = 30000, ceil = 5000 } } })
+  F.run(3)
+  local reach, ceiling = J.aaa.reach(node("AAA KS-19 Belt"))
+  check(reach == 20000 and ceiling == 5000, "a REACH entry never raises the DCS reach (30 km asked, 20 km kept); ceil caps")
+  F.reset()
+  base()
+  F.addGroup{ name = "AAA KS-19 Belt", units = { { type = "SON_9", x = 50000, z = 0 }, { type = "KS-19", x = 50100, z = 0 } } }
+  J = load({ REACH = { ["KS-19"] = { ceil = 7000 } } })
+  F.run(3)
+  reach, ceiling = J.aaa.reach(node("AAA KS-19 Belt"))
+  check(reach == 20000 and ceiling == 7000, "an entry with a ceiling only keeps the DCS reach")
+  check(not F.logContains("ERROR JANUS"), "no errors with a ceiling-only entry")
+end
+do
+  -- the Fire Can is cued from 1.3 x its 35 km tracking range: at 27.5 km (inside the 28 km ring) it comes up
+  F.reset()
+  base()
+  F.addGroup{ name = "AAA KS-19 Belt", units = { { type = "SON_9", x = 50000, z = 0 }, { type = "KS-19", x = 50100, z = 0 } } }
+  local b = bandit("Viper 1", 77500, 0)
+  load()
+  F.sees["EW North"] = { b }
+  F.run(60)
+  check(F.emitting("AAA KS-19 Belt"), "27.5 km: cued (cue range 45.5 km) and inside the 28 km ring: up")
+end
+
 -- ---------------------------------------------------------------- 6. NATO / US: up before the zone, no ambush
 do
   local RED = coalition.side.RED

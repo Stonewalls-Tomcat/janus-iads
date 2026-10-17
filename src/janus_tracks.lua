@@ -32,7 +32,7 @@ T.CLASS = { [0] = "fixed-wing", [1] = "helicopter" }
 
 local AIR = { [0] = true, [1] = true }   -- Unit.Category AIRPLANE, HELICOPTER
 
-T.EW_FRESH = 15         -- an EW plot older than this no longer cues a dark battery (3 EW polls)
+T.EW_FRESH = 15         -- an EW plot older than this no longer cues a dark battery (3 EW polls)  -- mutate: ok tuning
 
 -- The early-warning estimate of a track: its last EW plot while fresh, else nil (DESIGN 4.4, owner 2026-10-17)
 function T.ewPlot(tr, now)

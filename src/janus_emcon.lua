@@ -17,7 +17,6 @@ E.SHOT_HOLD_MAX = 120   -- a site never stays up longer than this for one missil
 local POLICIES = { always = true, dark = true, cued = true, periodic = true, rotating = true }
 E.POLICIES = POLICIES
 local MANAGED = { EW = true, BATTERY = true, PD = true, AAA = true, NAVAL = true, C2 = true }
-local WTA_KINDS = { BATTERY = true, PD = true, NAVAL = true }   -- kinds the WTA assigns targets to (janus_wta SHOOTERS)
 
 local function restartTime(n)
   local d = n.net.doctrine
@@ -152,7 +151,7 @@ function E.cueBase(n)
     local t = trackRange(n)
     if t then return t end
   end
-  return n.engageRange > 0 and n.engageRange or n.detectionRange
+  return n.engageRange > 0 and n.engageRange or n.detectionRange   -- mutate: ok[>] a node with no reach has a zero ring either way
 end
 
 -- Radius (before the doctrine's ambush factor) a dark cued radar waits for: a battery's reach at the target's height
@@ -177,7 +176,7 @@ function E.want(n, policy, now)
   if policy == "cued" then
     local tr, dist
     -- WTA cues only its shooters; a gun radar (Fire Can) on cued EMCON is cued by the nearest track like an EW-fed site
-    local byWta = WTA_KINDS[n.kind] and n.net.wtaActive and n.linked and not n.autonomous and M.wta ~= nil
+    local byWta = M.wta ~= nil and M.wta.SHOOTERS[n.kind] and n.net.wtaActive and n.linked and not n.autonomous
     if byWta then
       tr, dist = M.wta.targetFor(n)           -- a WTA network cues only the shooters it assigned (DESIGN 4.3)
     else
@@ -258,7 +257,7 @@ function E.onShot(e)
   if not (n and n.emcon) then return end
   n.emcon.shots = n.emcon.shots or {}
   n.emcon.shots[#n.emcon.shots + 1] = { weapon = e.weapon, t = M.now() }
-  if n.dry and M.wta then M.wta.rearm(n, "launched again") end
+  if n.dry then M.wta.rearm(n, "launched again") end   -- only the WTA sets `dry`
 end
 
 local function apply(n, on, reason, now)

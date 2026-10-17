@@ -4817,7 +4817,7 @@ local BASE = {
   autonomyDelay = TIER(180, 120, 60, 30),
   cueDelay = TIER(12, 6, 3, 2),
   cueFactor = 1.3, cueHold = 30, minOn = 15,  -- mutate: ok tuning
-  ambush = 1.0, cueSource = "any",
+  ambush = 1.0, cueSource = "any",   -- mutate: ok[n] every shipped profile sets its own ambush, or never cues
   emcon = { EW = "always", BATTERY = "cued", PD = "cued", AAA = "always", NAVAL = "always", C2 = "always" },
   autonomous = { EW = "always", BATTERY = "periodic", PD = "periodic", AAA = "always", NAVAL = "always", C2 = "always" },
   periodic = { on = 20, off = 40 },
@@ -4979,38 +4979,38 @@ M.Doctrines = {
 M.REACH_LOW, M.REACH_HIGH = 1000, 3000   -- mutate: ok tuning
 M.Reach = {
   -- Soviet / Russian SAMs
-  ["S-300PS 5P85C ln"] = { hi = 75000, lo = 40000 },   -- 5V55R 75 km; low targets: 30N6 on 40V6M mast horizon ~43 km
-  ["S-300PS 5P85D ln"] = { hi = 75000, lo = 40000 },
-  ["S-200_Launcher"]   = { hi = 150000, lo = 40000 },  -- vs fighters (240-255 km only vs large aircraft); low approx
-  ["S_75M_Volhov"]     = { hi = 35000, lo = 18000 },   -- V-755 ~30-35 km vs fighters (43 km vs subsonic only); low 15-20
-  ["5p73 s-125 ln"]    = { hi = 17000, lo = 10000 },   -- 5V27 17 km (22-25 km only vs subsonic); low ~10 km
-  ["Kub 2P25 ln"]      = { hi = 24000 },               -- 3M9 4-24 km
-  ["SA-11 Buk LN 9A310M1"] = { hi = 35000 },           -- Buk-M1 3-35 km (DCS 50 km is the M2 figure)
-  ["Osa 9A33 ln"]      = { hi = 10000 },               -- Osa-AK 1.5-10 km
+  ["S-300PS 5P85C ln"] = { hi = 75000, lo = 40000 },   -- 5V55R 75 km; low targets: 30N6 on 40V6M mast horizon ~43 km  -- mutate: ok sourced data (docs/REACH.md)
+  ["S-300PS 5P85D ln"] = { hi = 75000, lo = 40000 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["S-200_Launcher"]   = { hi = 150000, lo = 40000 },  -- vs fighters (240-255 km only vs large aircraft); low approx  -- mutate: ok sourced data (docs/REACH.md)
+  ["S_75M_Volhov"]     = { hi = 35000, lo = 18000 },   -- V-755 ~30-35 km vs fighters (43 km vs subsonic only); low 15-20  -- mutate: ok sourced data (docs/REACH.md)
+  ["5p73 s-125 ln"]    = { hi = 17000, lo = 10000 },   -- 5V27 17 km (22-25 km only vs subsonic); low ~10 km  -- mutate: ok sourced data (docs/REACH.md)
+  ["Kub 2P25 ln"]      = { hi = 24000 },               -- 3M9 4-24 km  -- mutate: ok sourced data (docs/REACH.md)
+  ["SA-11 Buk LN 9A310M1"] = { hi = 35000 },           -- Buk-M1 3-35 km (DCS 50 km is the M2 figure)  -- mutate: ok sourced data (docs/REACH.md)
+  ["Osa 9A33 ln"]      = { hi = 10000 },               -- Osa-AK 1.5-10 km  -- mutate: ok sourced data (docs/REACH.md)
   -- Soviet guns (effective, radar-directed)
-  ["KS-19"]            = { hi = 12000, ceil = 11000 }, -- 12.6 km slant with SON-9 (20 km is ballistic)
-  ["S-60_Type59_Artillery"] = { hi = 6000, ceil = 5000 },
-  ["ZSU-23-4 Shilka"]  = { hi = 2500, ceil = 2000 },
-  ["ZU-23 Emplacement"] = { hi = 2000, ceil = 1500 },
-  ["ZU-23 Emplacement Closed"] = { hi = 2000, ceil = 1500 },
-  ["ZU-23 Insurgent"]  = { hi = 2000, ceil = 1500 },
-  ["ZU-23 Closed Insurgent"] = { hi = 2000, ceil = 1500 },
-  ["Ural-375 ZU-23"]   = { hi = 2000, ceil = 1500 },
-  ["Ural-375 ZU-23 Insurgent"] = { hi = 2000, ceil = 1500 },
-  ["HL_ZU-23"]         = { hi = 2000, ceil = 1500 },
-  ["tt_ZU-23"]         = { hi = 2000, ceil = 1500 },
-  ["ZSU_57_2"]         = { hi = 4000, ceil = 3000 },   -- optical only
-  ["SON_9"]            = { track = 35000 },            -- Fire Can: reliable tracking range (55-80 km detection)
+  ["KS-19"]            = { hi = 12000, ceil = 11000 }, -- 12.6 km slant with SON-9 (20 km is ballistic)  -- mutate: ok sourced data (docs/REACH.md)
+  ["S-60_Type59_Artillery"] = { hi = 6000, ceil = 5000 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["ZSU-23-4 Shilka"]  = { hi = 2500, ceil = 2000 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["ZU-23 Emplacement"] = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["ZU-23 Emplacement Closed"] = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["ZU-23 Insurgent"]  = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["ZU-23 Closed Insurgent"] = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["Ural-375 ZU-23"]   = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["Ural-375 ZU-23 Insurgent"] = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["HL_ZU-23"]         = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["tt_ZU-23"]         = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["ZSU_57_2"]         = { hi = 4000, ceil = 3000 },   -- optical only  -- mutate: ok sourced data (docs/REACH.md)
+  ["SON_9"]            = { track = 35000 },            -- Fire Can: reliable tracking range (55-80 km detection)  -- mutate: ok sourced data (docs/REACH.md)
   -- Chinese
-  ["HQ-7_LN_SP"]       = { hi = 12000 },               -- 0.7-12 km vs aircraft (15 km vs helicopters)
-  ["HQ-7_LN_P"]        = { hi = 12000 },
+  ["HQ-7_LN_SP"]       = { hi = 12000 },               -- 0.7-12 km vs aircraft (15 km vs helicopters)  -- mutate: ok sourced data (docs/REACH.md)
+  ["HQ-7_LN_P"]        = { hi = 12000 },  -- mutate: ok sourced data (docs/REACH.md)
   -- WWII light guns (heavy guns: DCS lists them shorter than their real reach, so DCS stands)
-  ["flak30"]           = { hi = 2000, ceil = 2000 },
-  ["flak38"]           = { hi = 2000, ceil = 2000 },   -- Flakvierling: 2.2 km effective vertical
-  ["M45_Quadmount"]    = { hi = 800, ceil = 800 },     -- effective 500-800 yd
-  ["M1_37mm"]          = { hi = 2000, ceil = 1500 },   -- 1.1 km on-carriage, 2 km with director
-  ["Type_96_25mm_AA"]  = { hi = 1000, ceil = 1000 },   -- beyond 2 km "completely ineffective"; effective ~1 km
-  ["Type_94_25mm_AA_Truck"] = { hi = 1000, ceil = 1000 },
+  ["flak30"]           = { hi = 2000, ceil = 2000 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["flak38"]           = { hi = 2000, ceil = 2000 },   -- Flakvierling: 2.2 km effective vertical  -- mutate: ok sourced data (docs/REACH.md)
+  ["M45_Quadmount"]    = { hi = 800, ceil = 800 },     -- effective 500-800 yd  -- mutate: ok sourced data (docs/REACH.md)
+  ["M1_37mm"]          = { hi = 2000, ceil = 1500 },   -- 1.1 km on-carriage, 2 km with director  -- mutate: ok sourced data (docs/REACH.md)
+  ["Type_96_25mm_AA"]  = { hi = 1000, ceil = 1000 },   -- beyond 2 km "completely ineffective"; effective ~1 km  -- mutate: ok sourced data (docs/REACH.md)
+  ["Type_94_25mm_AA_Truck"] = { hi = 1000, ceil = 1000 },  -- mutate: ok sourced data (docs/REACH.md)
 }
 
 -- The reach entry for a DCS type, or nil: settings REACH = false uses the DCS figures only; a REACH table in the
@@ -5607,7 +5607,7 @@ T.CLASS = { [0] = "fixed-wing", [1] = "helicopter" }
 
 local AIR = { [0] = true, [1] = true }   -- Unit.Category AIRPLANE, HELICOPTER
 
-T.EW_FRESH = 15         -- an EW plot older than this no longer cues a dark battery (3 EW polls)
+T.EW_FRESH = 15         -- an EW plot older than this no longer cues a dark battery (3 EW polls)  -- mutate: ok tuning
 
 -- The early-warning estimate of a track: its last EW plot while fresh, else nil (DESIGN 4.4, owner 2026-10-17)
 function T.ewPlot(tr, now)
@@ -6024,6 +6024,7 @@ function W.rearm(n, why)
 end
 
 local SHOOTERS = { BATTERY = true, PD = true, NAVAL = true }   -- ships bid from their NAVAL_AD envelopes (Phase 4)
+W.SHOOTERS = SHOOTERS   -- EMCON cues these through their assignments
 local function shooterOK(n)
   return SHOOTERS[n.kind] and n.alive and n.working and n.powered and n.linked
     and not n.autonomous and (n.engageRange or 0) > 0 and n.pos ~= nil   -- mutate: ok W.pk rejects these too
@@ -6238,7 +6239,6 @@ E.SHOT_HOLD_MAX = 120   -- a site never stays up longer than this for one missil
 local POLICIES = { always = true, dark = true, cued = true, periodic = true, rotating = true }
 E.POLICIES = POLICIES
 local MANAGED = { EW = true, BATTERY = true, PD = true, AAA = true, NAVAL = true, C2 = true }
-local WTA_KINDS = { BATTERY = true, PD = true, NAVAL = true }   -- kinds the WTA assigns targets to (janus_wta SHOOTERS)
 
 local function restartTime(n)
   local d = n.net.doctrine
@@ -6373,7 +6373,7 @@ function E.cueBase(n)
     local t = trackRange(n)
     if t then return t end
   end
-  return n.engageRange > 0 and n.engageRange or n.detectionRange
+  return n.engageRange > 0 and n.engageRange or n.detectionRange   -- mutate: ok[>] a node with no reach has a zero ring either way
 end
 
 -- Radius (before the doctrine's ambush factor) a dark cued radar waits for: a battery's reach at the target's height
@@ -6398,7 +6398,7 @@ function E.want(n, policy, now)
   if policy == "cued" then
     local tr, dist
     -- WTA cues only its shooters; a gun radar (Fire Can) on cued EMCON is cued by the nearest track like an EW-fed site
-    local byWta = WTA_KINDS[n.kind] and n.net.wtaActive and n.linked and not n.autonomous and M.wta ~= nil
+    local byWta = M.wta ~= nil and M.wta.SHOOTERS[n.kind] and n.net.wtaActive and n.linked and not n.autonomous
     if byWta then
       tr, dist = M.wta.targetFor(n)           -- a WTA network cues only the shooters it assigned (DESIGN 4.3)
     else
@@ -6479,7 +6479,7 @@ function E.onShot(e)
   if not (n and n.emcon) then return end
   n.emcon.shots = n.emcon.shots or {}
   n.emcon.shots[#n.emcon.shots + 1] = { weapon = e.weapon, t = M.now() }
-  if n.dry and M.wta then M.wta.rearm(n, "launched again") end
+  if n.dry then M.wta.rearm(n, "launched again") end   -- only the WTA sets `dry`
 end
 
 local function apply(n, on, reason, now)
@@ -7265,11 +7265,12 @@ function AA.reach(n)
     local d = M.reachFor(rec.type)
     local reach = rec.threatRange or 0
     if reach > 0 then   -- guns only: a gun-laying radar's own envelope (SON-9 14 km) is not the guns' ceiling
-      if d and d.hi and d.hi < reach then reach = d.hi end
+      local hiCap, ceilCap = d and d.hi, d and d.ceil
+      if hiCap and hiCap < reach then reach = hiCap end
       if reach > r then r = reach end
       local e = rec.envelope
       local alt = e and e.altMax or reach   -- no envelope: assume it reaches as high as it reaches far
-      if d and d.ceil and d.ceil < alt then alt = d.ceil end
+      if ceilCap and ceilCap < alt then alt = ceilCap end
       if alt > c then c = alt end
     end
   end

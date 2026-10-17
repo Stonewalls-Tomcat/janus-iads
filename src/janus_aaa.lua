@@ -30,11 +30,12 @@ function AA.reach(n)
     local d = M.reachFor(rec.type)
     local reach = rec.threatRange or 0
     if reach > 0 then   -- guns only: a gun-laying radar's own envelope (SON-9 14 km) is not the guns' ceiling
-      if d and d.hi and d.hi < reach then reach = d.hi end
+      local hiCap, ceilCap = d and d.hi, d and d.ceil
+      if hiCap and hiCap < reach then reach = hiCap end
       if reach > r then r = reach end
       local e = rec.envelope
       local alt = e and e.altMax or reach   -- no envelope: assume it reaches as high as it reaches far
-      if d and d.ceil and d.ceil < alt then alt = d.ceil end
+      if ceilCap and ceilCap < alt then alt = ceilCap end
       if alt > c then c = alt end
     end
   end
