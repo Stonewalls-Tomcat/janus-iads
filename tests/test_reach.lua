@@ -263,6 +263,13 @@ do
   reach, ceiling = J.aaa.reach(node("AAA KS-19 Belt"))
   check(reach == 20000 and ceiling == 7000, "an entry with a ceiling only keeps the DCS reach")
   check(not F.logContains("ERROR JANUS"), "no errors with a ceiling-only entry")
+  F.reset()
+  base()
+  F.addGroup{ name = "AAA KS-19 Belt", units = { { type = "SON_9", x = 50000, z = 0 }, { type = "KS-19", x = 50100, z = 0 } } }
+  J = load({ REACH = { ["KS-19"] = { ceil = 25000 } } })
+  F.run(3)
+  reach, ceiling = J.aaa.reach(node("AAA KS-19 Belt"))
+  check(reach == 20000 and ceiling == 20000, "a ceiling above the gun's own never raises it")
 end
 do
   -- the Fire Can is cued from 1.3 x its 35 km tracking range: at 27.5 km (inside the 28 km ring) it comes up
