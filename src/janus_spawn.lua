@@ -167,8 +167,7 @@ function M.spawnBattery(presetName, point, opts)
       end
     end
   end
-  local coa = opts.coalition or 1
-  local ctry = opts.country or (coa == 2 and country.id.USA or country.id.RUSSIA)
+  local ctry = opts.country or (opts.coalition == 2 and country.id.USA or country.id.RUSSIA)   -- default: red
   local tier = opts.tier and SKILL[opts.tier] and opts.tier or "REG"
   local hdg = math_rad(opts.heading or 0)
   local units = SP.layout(preset, opts.full, opts.reduced)

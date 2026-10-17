@@ -41,6 +41,7 @@ timer = {
 }
 
 F.marks = {}
+F.markArgs = {}   -- id -> every argument of the drawing call
 F.coaText = {}     -- every outTextForCoalition { coa, text }
 F.sounds = {}      -- every outSoundForCoalition { coa, file }
 trigger = { action = {
@@ -49,9 +50,16 @@ trigger = { action = {
   outSoundForCoalition = function(c, file) F.sounds[#F.sounds + 1] = { coa = c, file = file } end,
   markToAll = function() end,
   removeMark = function(id) F.marks[id] = nil end,
-  circleToAll = function(c, id) F.marks[id] = "circle" end,
-  lineToAll = function(c, id) F.marks[id] = "line" end,
-  textToAll = function(c, id, p, col, fill, size, ro, text) F.marks[id] = "text:" .. tostring(text) end,
+  circleToAll = function(c, id, p, r, col, fill, lt, ro)
+    F.marks[id] = "circle"; F.markArgs[id] = { kind = "circle", c = c, p = p, r = r, color = col, fill = fill, line = lt, ro = ro }
+  end,
+  lineToAll = function(c, id, a, b, col, lt, ro)
+    F.marks[id] = "line"; F.markArgs[id] = { kind = "line", c = c, a = a, b = b, color = col, line = lt, ro = ro }
+  end,
+  textToAll = function(c, id, p, col, fill, size, ro, text)
+    F.marks[id] = "text:" .. tostring(text)
+    F.markArgs[id] = { kind = "text", c = c, p = p, color = col, fill = fill, size = size, ro = ro, text = text }
+  end,
 } }
 
 -- deterministic "random": every roll returns F.rnd (tests set it; 0.999 = unlikely events never happen)
@@ -320,7 +328,7 @@ end
 
 function F.reset()
   F.time = 0; F.log = {}; F.text = {}; F.groups = {}; F.timers = {}; handlers = {}
-  F.sees = {}; F.controllerError = {}; F.emissionLog = {}; F.marks = {}; F.noType = {}; F.statics = {}; F.detFlags = {}
+  F.sees = {}; F.controllerError = {}; F.emissionLog = {}; F.marks = {}; F.markArgs = {}; F.noType = {}; F.statics = {}; F.detFlags = {}
   F.weapons = {}; F.blockLOS = false; F.rnd = 0.999; F.heightFn = nil; F.waterFn = nil; F.added = {}; F.missingTypes = {}
   F.coaText = {}; F.sounds = {}; F.airbases = {}
   JANUS = nil; JANUS_SETTINGS = nil

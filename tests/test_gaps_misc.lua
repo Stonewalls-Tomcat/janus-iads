@@ -221,5 +221,42 @@ do
   check(count("SAM Rear [emcon:always] DARK for") == 0, "the site 15 km behind it does not")
 end
 
+-- ---------------------------------------------------------------- 6. spawner: spacing layout, rotation, slope under every unit
+do
+  F.reset()
+  F.addGroup{ name = "CMD Post", units = { { type = "SKP-11", x = 0, z = 0 } } }
+  local J = load()
+  F.run(2)
+  local SP = J.spawn
+  local L = SP.layout(J.Presets["SA-11"])
+  local tel = {}
+  for _, u in ipairs(L) do if u.type == "SA-11 Buk LN 9A310M1" then tel[#tel + 1] = u end end
+  local ok = #tel == 6
+  for k, u in ipairs(tel) do if u.dz ~= 250 * k then ok = false end end
+  check(ok, "spacing: TELARs one spacing apart to the east (250 m x k)")
+  check(tel[2] and tel[2].dx - tel[1].dx == 40, "spacing: each spaced unit 40 m further north")
+  -- rotation at 45 degrees, on a unit off both axes
+  F.added = {}
+  local name, info = J.spawnBattery("SA-11", { x = 50000, z = 50000 }, { heading = 45, label = "Rot" })
+  local data = F.added[#F.added].data
+  local u3 = tel[3]
+  local h = math.rad(45)
+  local ex = 50000 + u3.dx * math.cos(h) - u3.dz * math.sin(h)
+  local ez = 50000 + u3.dx * math.sin(h) + u3.dz * math.cos(h)
+  local found = false
+  for _, u in ipairs(data.units) do
+    if u.type == "SA-11 Buk LN 9A310M1" and math.abs(u.x - ex) < 0.01 and math.abs(u.y - ez) < 0.01 then found = true end
+  end
+  check(name ~= nil and found, "heading 45: a unit off both axes is turned correctly")
+  check(data.units[1] and F.added[#F.added].country == country.id.RUSSIA, "no coalition given: red (Russia)")
+  -- steep ground east of z = 60100: the TELARs east of the centre would stand on it, so the site moves
+  F.heightFn = function(x, z) if z > 60100 then return (z - 60100) * 0.6 else return 0 end end
+  local nm, inf = J.spawnBattery("SA-11", { x = 60000, z = 60000 }, { label = "Slope" })
+  check(nm ~= nil and inf.z < 60000 - 1000, "every unit's own ground is checked: the site moved off the slope (z " .. tostring(inf and inf.z) .. ")")
+  local d = inf and math.sqrt((inf.x - 60000) ^ 2 + (inf.z - 60000) ^ 2)
+  check(d and F.logContains(string.format("%.0f m from the point asked", d)), "the log gives the true distance moved")
+  F.heightFn = nil
+end
+
 print(string.format("test_gaps_misc: %d passed, %d failed", passed, failed))
 if failed > 0 then os.exit(1) end
