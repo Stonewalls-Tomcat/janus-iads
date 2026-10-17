@@ -73,7 +73,6 @@ local function copyDefaults(dst, src)
       dst[k] = v
     end
   end
-  return dst
 end
 
 M.settings = M.settings or {}
@@ -126,7 +125,7 @@ end
 M.errorCount = function(tag) local b = budget[tag]; return b and b.n or 0 end
 
 local function traceback(err)
-  if debug and debug.traceback then return debug.traceback(tostring(err), 2) end
+  if debug and debug.traceback then return debug.traceback(tostring(err), 2) end   -- mutate: ok[n] the level only trims frames
   return tostring(err)
 end
 
@@ -8172,8 +8171,8 @@ local EXPECT = {
   COMMS = {}, POWER = {},
 }
 
-M.sites = M.sites or {}
-M.report = M.report or {}
+M.sites = M.sites or {}     -- mutate: ok[or] scan() rebuilds the list at start
+M.report = M.report or {}   -- mutate: ok[or] scan() rebuilds the report at start
 
 local function add(lines, s) lines[#lines + 1] = s end
 
@@ -8262,9 +8261,8 @@ local function inspectGroup(group, parsed, coa)
     end
   end
 
-  local expect = EXPECT[parsed.role] or {}
+  local expect = EXPECT[parsed.role] or {}   -- mutate: ok[or] every role word has an EXPECT entry
   local function hasAny(set)
-    if not set then return true end
     for role in pairs(set) do
       if (site.roles[role] or 0) > 0 then return true end
     end
@@ -8428,7 +8426,7 @@ function M.start(opts)
   M.startEvents()
   -- Phase modules, in dependency order. Each is optional so a partial build still runs.
   for _, mod in ipairs({ "net", "tracks", "wta", "emcon", "arm", "aaa", "gci", "api", "statsMod", "warning", "debugview" }) do
-    if M[mod] and M[mod].start then M.safe("setup.start." .. mod, M[mod].start) end
+    if M[mod] and M[mod].start then M.safe("setup.start." .. mod, M[mod].start) end   -- mutate: ok[and] every module in the full build has start (test_gaps_setup_core)
   end
   M.startScheduler()
   M.info("setup", string_format("started: red doctrine %s, blue doctrine %s, %d sites",

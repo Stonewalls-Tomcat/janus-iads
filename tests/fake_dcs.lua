@@ -44,7 +44,7 @@ F.marks = {}
 F.coaText = {}     -- every outTextForCoalition { coa, text }
 F.sounds = {}      -- every outSoundForCoalition { coa, file }
 trigger = { action = {
-  outText = function(s, secs) F.text[#F.text + 1] = s end,
+  outText = function(s, secs) F.text[#F.text + 1] = s; F.textSecs = secs end,
   outTextForCoalition = function(c, s, secs) F.text[#F.text + 1] = s; F.coaText[#F.coaText + 1] = { coa = c, text = s, secs = secs } end,
   outSoundForCoalition = function(c, file) F.sounds[#F.sounds + 1] = { coa = c, file = file } end,
   markToAll = function() end,

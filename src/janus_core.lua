@@ -66,7 +66,6 @@ local function copyDefaults(dst, src)
       dst[k] = v
     end
   end
-  return dst
 end
 
 M.settings = M.settings or {}
@@ -119,7 +118,7 @@ end
 M.errorCount = function(tag) local b = budget[tag]; return b and b.n or 0 end
 
 local function traceback(err)
-  if debug and debug.traceback then return debug.traceback(tostring(err), 2) end
+  if debug and debug.traceback then return debug.traceback(tostring(err), 2) end   -- mutate: ok[n] the level only trims frames
   return tostring(err)
 end
 
