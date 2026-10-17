@@ -89,7 +89,7 @@ local BASE = {
   autonomyDelay = TIER(180, 120, 60, 30),
   cueDelay = TIER(12, 6, 3, 2),
   cueFactor = 1.3, cueHold = 30, minOn = 15,  -- mutate: ok tuning
-  ambush = 1.0, cueSource = "any",   -- mutate: ok[n] every shipped profile sets its own ambush, or never cues
+  ambush = 1.0, cueSource = "any",
   emcon = { EW = "always", BATTERY = "cued", PD = "cued", AAA = "always", NAVAL = "always", C2 = "always" },
   autonomous = { EW = "always", BATTERY = "periodic", PD = "periodic", AAA = "always", NAVAL = "always", C2 = "always" },
   periodic = { on = 20, off = 40 },
@@ -251,38 +251,38 @@ M.Doctrines = {
 M.REACH_LOW, M.REACH_HIGH = 1000, 3000   -- mutate: ok tuning
 M.Reach = {
   -- Soviet / Russian SAMs
-  ["S-300PS 5P85C ln"] = { hi = 75000, lo = 40000 },   -- 5V55R 75 km; low targets: 30N6 on 40V6M mast horizon ~43 km  -- mutate: ok sourced data (docs/REACH.md)
-  ["S-300PS 5P85D ln"] = { hi = 75000, lo = 40000 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["S-200_Launcher"]   = { hi = 150000, lo = 40000 },  -- vs fighters (240-255 km only vs large aircraft); low approx  -- mutate: ok sourced data (docs/REACH.md)
-  ["S_75M_Volhov"]     = { hi = 35000, lo = 18000 },   -- V-755 ~30-35 km vs fighters (43 km vs subsonic only); low 15-20  -- mutate: ok sourced data (docs/REACH.md)
-  ["5p73 s-125 ln"]    = { hi = 17000, lo = 10000 },   -- 5V27 17 km (22-25 km only vs subsonic); low ~10 km  -- mutate: ok sourced data (docs/REACH.md)
-  ["Kub 2P25 ln"]      = { hi = 24000 },               -- 3M9 4-24 km  -- mutate: ok sourced data (docs/REACH.md)
-  ["SA-11 Buk LN 9A310M1"] = { hi = 35000 },           -- Buk-M1 3-35 km (DCS 50 km is the M2 figure)  -- mutate: ok sourced data (docs/REACH.md)
-  ["Osa 9A33 ln"]      = { hi = 10000 },               -- Osa-AK 1.5-10 km  -- mutate: ok sourced data (docs/REACH.md)
+  ["S-300PS 5P85C ln"] = { hi = 75000, lo = 40000 },   -- 5V55R 75 km; low targets: 30N6 on 40V6M mast horizon ~43 km
+  ["S-300PS 5P85D ln"] = { hi = 75000, lo = 40000 },
+  ["S-200_Launcher"]   = { hi = 150000, lo = 40000 },  -- vs fighters (240-255 km only vs large aircraft); low approx
+  ["S_75M_Volhov"]     = { hi = 35000, lo = 18000 },   -- V-755 ~30-35 km vs fighters (43 km vs subsonic only); low 15-20
+  ["5p73 s-125 ln"]    = { hi = 17000, lo = 10000 },   -- 5V27 17 km (22-25 km only vs subsonic); low ~10 km
+  ["Kub 2P25 ln"]      = { hi = 24000 },               -- 3M9 4-24 km
+  ["SA-11 Buk LN 9A310M1"] = { hi = 35000 },           -- Buk-M1 3-35 km (DCS 50 km is the M2 figure)
+  ["Osa 9A33 ln"]      = { hi = 10000 },               -- Osa-AK 1.5-10 km
   -- Soviet guns (effective, radar-directed)
-  ["KS-19"]            = { hi = 12000, ceil = 11000 }, -- 12.6 km slant with SON-9 (20 km is ballistic)  -- mutate: ok sourced data (docs/REACH.md)
-  ["S-60_Type59_Artillery"] = { hi = 6000, ceil = 5000 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["ZSU-23-4 Shilka"]  = { hi = 2500, ceil = 2000 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["ZU-23 Emplacement"] = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["ZU-23 Emplacement Closed"] = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["ZU-23 Insurgent"]  = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["ZU-23 Closed Insurgent"] = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["Ural-375 ZU-23"]   = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["Ural-375 ZU-23 Insurgent"] = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["HL_ZU-23"]         = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["tt_ZU-23"]         = { hi = 2000, ceil = 1500 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["ZSU_57_2"]         = { hi = 4000, ceil = 3000 },   -- optical only  -- mutate: ok sourced data (docs/REACH.md)
-  ["SON_9"]            = { track = 35000 },            -- Fire Can: reliable tracking range (55-80 km detection)  -- mutate: ok sourced data (docs/REACH.md)
+  ["KS-19"]            = { hi = 12000, ceil = 11000 }, -- 12.6 km slant with SON-9 (20 km is ballistic)
+  ["S-60_Type59_Artillery"] = { hi = 6000, ceil = 5000 },
+  ["ZSU-23-4 Shilka"]  = { hi = 2500, ceil = 2000 },
+  ["ZU-23 Emplacement"] = { hi = 2000, ceil = 1500 },
+  ["ZU-23 Emplacement Closed"] = { hi = 2000, ceil = 1500 },
+  ["ZU-23 Insurgent"]  = { hi = 2000, ceil = 1500 },
+  ["ZU-23 Closed Insurgent"] = { hi = 2000, ceil = 1500 },
+  ["Ural-375 ZU-23"]   = { hi = 2000, ceil = 1500 },
+  ["Ural-375 ZU-23 Insurgent"] = { hi = 2000, ceil = 1500 },
+  ["HL_ZU-23"]         = { hi = 2000, ceil = 1500 },
+  ["tt_ZU-23"]         = { hi = 2000, ceil = 1500 },
+  ["ZSU_57_2"]         = { hi = 4000, ceil = 3000 },   -- optical only
+  ["SON_9"]            = { track = 35000 },            -- Fire Can: reliable tracking range (55-80 km detection)
   -- Chinese
-  ["HQ-7_LN_SP"]       = { hi = 12000 },               -- 0.7-12 km vs aircraft (15 km vs helicopters)  -- mutate: ok sourced data (docs/REACH.md)
-  ["HQ-7_LN_P"]        = { hi = 12000 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["HQ-7_LN_SP"]       = { hi = 12000 },               -- 0.7-12 km vs aircraft (15 km vs helicopters)
+  ["HQ-7_LN_P"]        = { hi = 12000 },
   -- WWII light guns (heavy guns: DCS lists them shorter than their real reach, so DCS stands)
-  ["flak30"]           = { hi = 2000, ceil = 2000 },  -- mutate: ok sourced data (docs/REACH.md)
-  ["flak38"]           = { hi = 2000, ceil = 2000 },   -- Flakvierling: 2.2 km effective vertical  -- mutate: ok sourced data (docs/REACH.md)
-  ["M45_Quadmount"]    = { hi = 800, ceil = 800 },     -- effective 500-800 yd  -- mutate: ok sourced data (docs/REACH.md)
-  ["M1_37mm"]          = { hi = 2000, ceil = 1500 },   -- 1.1 km on-carriage, 2 km with director  -- mutate: ok sourced data (docs/REACH.md)
-  ["Type_96_25mm_AA"]  = { hi = 1000, ceil = 1000 },   -- beyond 2 km "completely ineffective"; effective ~1 km  -- mutate: ok sourced data (docs/REACH.md)
-  ["Type_94_25mm_AA_Truck"] = { hi = 1000, ceil = 1000 },  -- mutate: ok sourced data (docs/REACH.md)
+  ["flak30"]           = { hi = 2000, ceil = 2000 },
+  ["flak38"]           = { hi = 2000, ceil = 2000 },   -- Flakvierling: 2.2 km effective vertical
+  ["M45_Quadmount"]    = { hi = 800, ceil = 800 },     -- effective 500-800 yd
+  ["M1_37mm"]          = { hi = 2000, ceil = 1500 },   -- 1.1 km on-carriage, 2 km with director
+  ["Type_96_25mm_AA"]  = { hi = 1000, ceil = 1000 },   -- beyond 2 km "completely ineffective"; effective ~1 km
+  ["Type_94_25mm_AA_Truck"] = { hi = 1000, ceil = 1000 },
 }
 
 -- The reach entry for a DCS type, or nil: settings REACH = false uses the DCS figures only; a REACH table in the

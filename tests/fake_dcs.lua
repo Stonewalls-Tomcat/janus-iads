@@ -112,7 +112,10 @@ end
 function UnitMT:getPosition() return { p = self:getPoint(), x = { x = 1, y = 0, z = 0 } } end
 function UnitMT:getGroup() return self.group end
 function UnitMT:getCoalition() return self.group.coalition end
-function UnitMT:getLife() return self.alive and 1 or 0 end
+function UnitMT:getLife()   -- unit.life overrides (a wreck that still exists reports 0)
+  if self.life ~= nil then return self.alive and self.life or 0 end
+  return self.alive and 1 or 0
+end
 function UnitMT:getID() return self.id end
 function UnitMT:getCategory() return Object.Category.UNIT end
 function UnitMT:getController() return self.group:getController() end
