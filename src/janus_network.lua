@@ -125,7 +125,7 @@ function N.addSite(site)
   N.list[#N.list + 1] = node
   net.nodes[#net.nodes + 1] = node
   if kind == "C2" then net.hasC2 = true end
-  N.dirty = true
+  N.dirty = true   -- mutate: ok[true] a late pickup is also marked by EMCON (onNewNode); this one covers a build without it
   return node
 end
 
@@ -138,7 +138,7 @@ local function nodePos(node)
     return nil
   end
   local g = node.site.group
-  if not (g and g.isExist and g:isExist()) then return nil end
+  if not (g and g.isExist and g:isExist()) then return nil end   -- mutate: ok[and] defensive: a site always has its group
   local units = g:getUnits() or {}
   for i = 1, #units do
     if U.alive(units[i]) then

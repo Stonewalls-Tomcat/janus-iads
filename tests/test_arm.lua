@@ -106,6 +106,7 @@ do
   check(s.untilT - s.since > 60 and s.untilT - s.since < 75, "dark time = estimated time to impact + margin + caution")
   F.run(3 + 150)
   check(count("SAM SA-6 A [emcon:always] may emit again") == 1, "released once the threat time passed")
+  check(count("SAM SA-6 A [emcon:always] may emit again: threat time passed") == 1, "... and says so (not the maximum dark time)")
   check(F.emitting("SAM SA-6 A [emcon:always]"), "back up (after the restart time)")
   local lost = n.arm.darkSec
   check(lost > 55 and lost < 80, "emitting time lost is counted")

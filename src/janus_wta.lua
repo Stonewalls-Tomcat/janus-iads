@@ -353,7 +353,7 @@ function W.assign(net)
           M.info("wta", string_format("%s %s assigned to %s (Pk %.2f)", net.key, label, c.node.name, c.pk))
         end
         M.publish("engage", { coalition = net.coalition, net = net.key, site = c.node.name, from = from and from.name,
-          track = tr.num, unitId = tr.id, typeName = tr.typeKnown and tr.typeName or nil, pk = c.pk })
+          track = tr.num, unitId = tr.id, typeName = tr.typeName, pk = c.pk })
       end
     end
     if #chosen == 0 and #had > 0 and net.tracks[tr.id] then

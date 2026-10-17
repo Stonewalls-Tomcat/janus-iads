@@ -225,9 +225,15 @@ end
 do
   F.reset()
   F.addGroup{ name = "SAM GRN Kilo [skill:vet]", units = { { type = "Kub 1S91 str" } } }
+  for i, t in ipairs({ "grn", "reg", "vet", "ace" }) do
+    F.addGroup{ name = "SAM VET Tag" .. i .. " [tier:" .. t .. "]", units = { { type = "Kub 1S91 str", x = 1000 * i } } }
+  end
   load()
   F.run(2)
   check(node("SAM GRN Kilo [skill:vet]").tier == "VET", "[skill:] tag wins over a tier word in the name")
+  for i, t in ipairs({ "GRN", "REG", "VET", "ACE" }) do
+    check(node("SAM VET Tag" .. i .. " [tier:" .. string.lower(t) .. "]").tier == t, "[tier:" .. t .. "] wins over the name word VET")
+  end
 end
 
 -- ---------------------------------------------------------------- 9. relays: two hops, the [relay:] tag, power, report
@@ -287,6 +293,15 @@ do
   F.fire({ id = world.event.S_EVENT_DEAD, initiator = cmdU })
   F.run(10)
   check(not node("SAM K").linked, "after a DEAD event the topology is rebuilt: command gone, link gone")
+  local calls = 0
+  JANUS.net.onTopology = function() calls = calls + 1 end
+  F.run(20)
+  check(calls == 0, "no topology change, no callback")
+  local u = F.groups["SAM K"].units[2]
+  u.alive = false
+  F.fire({ id = world.event.S_EVENT_DEAD, initiator = u })
+  F.run(26)
+  check(calls == 1, "a DEAD event re-runs the topology once (callback " .. calls .. ")")
 end
 
 -- ---------------------------------------------------------------- 11. a late group joins the topology and the site list

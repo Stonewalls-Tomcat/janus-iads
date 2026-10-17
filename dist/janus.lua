@@ -5172,7 +5172,7 @@ function N.addSite(site)
   N.list[#N.list + 1] = node
   net.nodes[#net.nodes + 1] = node
   if kind == "C2" then net.hasC2 = true end
-  N.dirty = true
+  N.dirty = true   -- mutate: ok[true] a late pickup is also marked by EMCON (onNewNode); this one covers a build without it
   return node
 end
 
@@ -5185,7 +5185,7 @@ local function nodePos(node)
     return nil
   end
   local g = node.site.group
-  if not (g and g.isExist and g:isExist()) then return nil end
+  if not (g and g.isExist and g:isExist()) then return nil end   -- mutate: ok[and] defensive: a site always has its group
   local units = g:getUnits() or {}
   for i = 1, #units do
     if U.alive(units[i]) then
@@ -6176,7 +6176,7 @@ function W.assign(net)
           M.info("wta", string_format("%s %s assigned to %s (Pk %.2f)", net.key, label, c.node.name, c.pk))
         end
         M.publish("engage", { coalition = net.coalition, net = net.key, site = c.node.name, from = from and from.name,
-          track = tr.num, unitId = tr.id, typeName = tr.typeKnown and tr.typeName or nil, pk = c.pk })
+          track = tr.num, unitId = tr.id, typeName = tr.typeName, pk = c.pk })
       end
     end
     if #chosen == 0 and #had > 0 and net.tracks[tr.id] then
@@ -6940,7 +6940,7 @@ local function frontNode(n, th, p, v, now)
     th.front = fr or {}
     th.front[n.net.key] = best
   end
-  return best
+  return best   -- mutate: ok[return] cached above: every later call reads th.front
 end
 
 -- time to impact of threat th on node n (nil = not aimed at it), from the node's estimate

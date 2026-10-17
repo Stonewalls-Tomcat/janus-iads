@@ -395,6 +395,44 @@ do
   check(node("SAM Late") and node("SAM Late").linked and node("SAM Late").parent ~= nil, "a late group joins the topology")
 end
 
+do
+  -- rotation counts only radars of the same kind: a rotating SAM does not take turns with a rotating EW
+  F.reset()
+  cmd()
+  F.addGroup{ name = "EW Rot [emcon:rotating]", units = { { type = "55G6 EWR", x = 20000, z = 0 } } }
+  sa6("SAM Rot [emcon:rotating]", 30000, 0)
+  load()
+  for t = 10, 250, 30 do
+    F.run(t)
+    check(node("EW Rot [emcon:rotating]").emcon.on == true, "the only rotating EW is always up (t=" .. t .. ")")
+  end
+end
+do
+  -- a periodic site in its off phase is not brought back by its own leftover tracks
+  F.reset()
+  cmd()
+  sa6("SAM P", 50000, 0)
+  local b = bandit("Viper 1", 62000, 0)
+  local J = load()
+  F.sees["SAM P"] = { b }
+  F.run(100)
+  local p = node("SAM P")
+  check(p.emcon.on == true, "held up by its own track")
+  J.emcon.set("SAM P", "dark")
+  F.run(103)
+  check(p.emcon.on == false, "forced dark")
+  -- back to periodic at a moment in the off part of its cycle, with the leftover track still fresh
+  local phase = p.emcon.phase
+  local t = 104
+  while ((t + phase) % 75) < 20 do t = t + 1 end
+  F.run(t)
+  J.emcon.set("SAM P", nil)
+  F.run(t + 12)
+  if ((t + 12 + phase) % 75) >= 15 then
+    check(p.emcon.on == false, "off part of the cycle: leftover tracks do not bring it up")
+  end
+end
+
 -- ---------------------------------------------------------------- 11. more track edges
 do
   F.reset()

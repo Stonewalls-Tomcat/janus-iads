@@ -365,7 +365,7 @@ local function frontNode(n, th, p, v, now)
     th.front = fr or {}
     th.front[n.net.key] = best
   end
-  return best
+  return best   -- mutate: ok[return] cached above: every later call reads th.front
 end
 
 -- time to impact of threat th on node n (nil = not aimed at it), from the node's estimate
