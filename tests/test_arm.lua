@@ -1094,5 +1094,49 @@ do
   noErrors("block 24")
 end
 
+-- ---------------------------------------------------------------- empty point defence (bench 08, owner 2026-10-17)
+-- A Tor with no missiles left has nothing to fight an ARM with: it goes dark like any radar instead of staying up to
+-- "engage" (bench 08: an empty Tor came up for ARM cover and to engage HARMs). Guns fight on after the missiles.
+do
+  local function tor(name, cat)
+    F.reset()
+    F.rnd = 0
+    cmd()
+    local g = F.addGroup{ name = name, units = { { type = "Tor 9A331", x = 0, z = 0 } } }
+    g.units[1].ammo = cat and 500 or 0
+    g.units[1].ammoCat = cat
+    sa6("SAM SA-6 Near [emcon:always]", 0, 5000)
+    local viper = bandit("Viper 1", 200000, 0)
+    load()
+    F.run(15)                                   -- the ammo refresh has run
+    harm(viper, 30000, 0, 600)
+    F.run(15 + 30)
+    return g
+  end
+  tor("PD Tor Empty [emcon:always]")
+  check(count("PD Tor Empty [emcon:always] out of missiles") == 1, "the Tor knows it is empty")
+  check(count("PD Tor Empty [emcon:always] stays up to engage") == 0, "an empty Tor does not stay up to engage the ARM")
+  check(count("PD Tor Empty [emcon:always] DARK") == 1, "it goes dark like any threatened radar")
+  noErrors("empty Tor")
+  -- an SA-6 threatened next to an empty Tor gets no ARM cover from it
+  F.reset()
+  F.rnd = 0
+  cmd()
+  local g = F.addGroup{ name = "PD Tor Empty", units = { { type = "Tor 9A331", x = 0, z = 3000 } } }
+  g.units[1].ammo = 0
+  sa6("SAM SA-6 A [emcon:always]", 0, 0)
+  local viper = bandit("Viper 1", 200000, 0)
+  load()
+  F.run(15)
+  harm(viper, 30000, 0, 600)
+  F.run(15 + 30)
+  check(count("PD Tor Empty ON (ARM cover)") == 0, "an empty Tor gives no ARM cover")
+  noErrors("empty Tor cover")
+  tor("PD Tor Guns [emcon:always]", 0)          -- shells only (a Tunguska / Pantsir with its missiles gone)
+  check(count("PD Tor Guns [emcon:always] out of missiles") == 1, "no missiles")
+  check(count("PD Tor Guns [emcon:always] stays up to engage") == 1, "guns left: it still fights the ARM")
+  noErrors("guns only")
+end
+
 print(string.format("test_arm: %d passed, %d failed", passed, failed))
 if failed > 0 then os.exit(1) end

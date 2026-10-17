@@ -394,7 +394,7 @@ local function pdCover(n)
   local r2 = d.pdCoverRange * d.pdCoverRange
   local out = {}
   for _, m in ipairs(n.net.nodes) do
-    if m ~= n and up(m) and m.pos and m.hasRadar and (m.kind == "PD" or A.sensorTier(m) == "A") then
+    if m ~= n and up(m) and m.pos and m.hasRadar and (m.kind == "PD" or A.sensorTier(m) == "A") and M.wta.armed(m) then
       local dx, dz = m.pos.x - n.pos.x, m.pos.z - n.pos.z
       if dx * dx + dz * dz <= r2 then out[#out + 1] = m end
     end
@@ -460,7 +460,8 @@ local function respond(n, now)
   s.reactAt = s.reactAt or (now + (d.reaction[n.tier] or d.reaction.REG))   -- mutate: ok every tier present
   if now < s.reactAt then return end
   local tier = A.sensorTier(n)
-  if (tier == "A" or n.kind == "PD") and d.pdEngage then
+  -- an empty point-defence site (no missiles, no guns) has nothing to fight the ARM with: it acts like any radar
+  if (tier == "A" or n.kind == "PD") and d.pdEngage and M.wta.armed(n) then
     s.mode = "engage"
     say(n, "engage" .. worst.id, string_format("stays up to engage ARM %s (%.0f s out)", worst.id, worstT))
     return

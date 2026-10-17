@@ -161,7 +161,7 @@ end
 local function refreshAmmo(n)
   local g = n.site.group
   if not (g and g:isExist()) then return end   -- mutate: ok the loop below checks every unit again
-  local total, known = 0, false
+  local total, shells, known = 0, 0, false
   for _, u in ipairs(n.site.units) do
     if LAUNCHER[u.rec.role] and u.unit.getAmmo and u.unit:isExist() then   -- mutate: ok defensive: DCS units always have getAmmo
       local ok, ammo = pcall(u.unit.getAmmo, u.unit)
@@ -170,6 +170,7 @@ local function refreshAmmo(n)
         for _, a in ipairs(ammo or {}) do
           local d = a.desc
           if d and d.category == 1 then total = total + (a.count or 0) end   -- Weapon.Category.MISSILE  -- mutate: ok DCS always gives count
+          if d and d.category == 0 then shells = shells + (a.count or 0) end   -- SHELL: Tunguska / Pantsir guns  -- mutate: ok DCS always gives count
         end
       end
     end
@@ -188,8 +189,12 @@ local function refreshAmmo(n)
         n.net.key, n.name, total))
     end
     n.ammo = n.dry and 0 or total
+    n.guns = shells > 0
   end
 end
+
+-- Can this site still shoot at anything (missiles, or guns that fight on after the missiles are gone)?
+function W.armed(n) return not n.dry or n.guns == true end
 
 -- A dry battery is loaded again: it launched (emcon's S_EVENT_SHOT) or a script resupplied it (JANUS.wta.rearm).
 function W.rearm(n, why)

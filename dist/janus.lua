@@ -5984,7 +5984,7 @@ end
 local function refreshAmmo(n)
   local g = n.site.group
   if not (g and g:isExist()) then return end   -- mutate: ok the loop below checks every unit again
-  local total, known = 0, false
+  local total, shells, known = 0, 0, false
   for _, u in ipairs(n.site.units) do
     if LAUNCHER[u.rec.role] and u.unit.getAmmo and u.unit:isExist() then   -- mutate: ok defensive: DCS units always have getAmmo
       local ok, ammo = pcall(u.unit.getAmmo, u.unit)
@@ -5993,6 +5993,7 @@ local function refreshAmmo(n)
         for _, a in ipairs(ammo or {}) do
           local d = a.desc
           if d and d.category == 1 then total = total + (a.count or 0) end   -- Weapon.Category.MISSILE  -- mutate: ok DCS always gives count
+          if d and d.category == 0 then shells = shells + (a.count or 0) end   -- SHELL: Tunguska / Pantsir guns  -- mutate: ok DCS always gives count
         end
       end
     end
@@ -6011,8 +6012,12 @@ local function refreshAmmo(n)
         n.net.key, n.name, total))
     end
     n.ammo = n.dry and 0 or total
+    n.guns = shells > 0
   end
 end
+
+-- Can this site still shoot at anything (missiles, or guns that fight on after the missiles are gone)?
+function W.armed(n) return not n.dry or n.guns == true end
 
 -- A dry battery is loaded again: it launched (emcon's S_EVENT_SHOT) or a script resupplied it (JANUS.wta.rearm).
 function W.rearm(n, why)
@@ -6964,7 +6969,7 @@ local function pdCover(n)
   local r2 = d.pdCoverRange * d.pdCoverRange
   local out = {}
   for _, m in ipairs(n.net.nodes) do
-    if m ~= n and up(m) and m.pos and m.hasRadar and (m.kind == "PD" or A.sensorTier(m) == "A") then
+    if m ~= n and up(m) and m.pos and m.hasRadar and (m.kind == "PD" or A.sensorTier(m) == "A") and M.wta.armed(m) then
       local dx, dz = m.pos.x - n.pos.x, m.pos.z - n.pos.z
       if dx * dx + dz * dz <= r2 then out[#out + 1] = m end
     end
@@ -7030,7 +7035,8 @@ local function respond(n, now)
   s.reactAt = s.reactAt or (now + (d.reaction[n.tier] or d.reaction.REG))   -- mutate: ok every tier present
   if now < s.reactAt then return end
   local tier = A.sensorTier(n)
-  if (tier == "A" or n.kind == "PD") and d.pdEngage then
+  -- an empty point-defence site (no missiles, no guns) has nothing to fight the ARM with: it acts like any radar
+  if (tier == "A" or n.kind == "PD") and d.pdEngage and M.wta.armed(n) then
     s.mode = "engage"
     say(n, "engage" .. worst.id, string_format("stays up to engage ARM %s (%.0f s out)", worst.id, worstT))
     return
