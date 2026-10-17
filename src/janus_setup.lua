@@ -115,10 +115,10 @@ local function inspectGroup(group, parsed, coa)
 
   local expect = EXPECT[parsed.role] or {}   -- mutate: ok[or] every role word has an EXPECT entry
   local function hasAny(set)
-    for role in pairs(set) do
-      if (site.roles[role] or 0) > 0 then return true end
+    for role, n in pairs(site.roles) do
+      if set[role] and n > 0 then return true end
     end
-    return false
+    return false   -- mutate: ok[return] nil and false both mean "none"
   end
   if expect.shooters and not hasAny(expect.shooters) then
     site.problems[#site.problems + 1] = "has no launcher or gun: it will never fire"
@@ -245,7 +245,7 @@ function M.scan()
   end
   local dlcs = {}
   for _, site in ipairs(M.sites) do
-    if site.dlc then dlcs[site.dlc] = true end
+    if site.dlc then dlcs[site.dlc] = true end   -- mutate: ok[true] only the keys are read
   end
   for _, d in ipairs(U.keys(dlcs)) do
     add(lines, string_format("This mission uses DCS: %s units: say so in the briefing, players without the DLC cannot join.", d))

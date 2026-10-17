@@ -14,6 +14,11 @@ local function load(settings)
   return JANUS
 end
 local function node(name) return JANUS.net.nodes[name] end
+local function count(pattern)
+  local n = 0
+  for _, l in ipairs(F.log) do if l:find(pattern, 1, true) then n = n + 1 end end
+  return n
+end
 local freshReset = F.reset
 F.reset = function()
   if JANUS then check(not F.logContains("ERROR JANUS"), "no Janus errors before a reset (t=" .. F.time .. ")") end
@@ -214,6 +219,88 @@ do
   F.run(6)
   local p = node("SAM Pos").pos
   check(p and p.x == 12345 and p.z == 678, "a destroyed site keeps its last known position")
+end
+
+-- ---------------------------------------------------------------- 8. tier tag beats an earlier name word
+do
+  F.reset()
+  F.addGroup{ name = "SAM GRN Kilo [skill:vet]", units = { { type = "Kub 1S91 str" } } }
+  load()
+  F.run(2)
+  check(node("SAM GRN Kilo [skill:vet]").tier == "VET", "[skill:] tag wins over a tier word in the name")
+end
+
+-- ---------------------------------------------------------------- 9. relays: two hops, the [relay:] tag, power, report
+do
+  F.reset()
+  F.addGroup{ name = "CMD Post", units = { { type = "SKP-11", x = 0, z = 0 } } }
+  F.addGroup{ name = "COMMS R1", units = { { type = "ZIL-131 KUNG", x = 70000, z = 0 } } }
+  F.addGroup{ name = "COMMS R2", units = { { type = "ZIL-131 KUNG", x = 140000, z = 0 } } }
+  F.addGroup{ name = "SAM Far", units = { { type = "Kub 1S91 str", x = 250000, z = 0 }, { type = "Kub 2P25 ln", x = 250200, z = 0 } } }
+  F.addGroup{ name = "SAM Tagged [relay:R2]", units = { { type = "Kub 1S91 str", x = 150000, z = 5000 } } }
+  F.addGroup{ name = "SAM Tagged Far [relay:R1]", units = { { type = "Kub 1S91 str", x = 260000, z = 0 } } }
+  F.addGroup{ name = "POWER Gen", units = { { type = "generator_5i57", x = 250500, z = 0 } } }
+  local J = load()
+  F.run(3)
+  check(node("SAM Far").linked and node("SAM Far").parent == node("COMMS R2"), "two relay hops: linked through the far relay")
+  check(node("SAM Tagged [relay:R2]").linked and node("SAM Tagged [relay:R2]").parent == node("COMMS R2"), "[relay:] picks that relay")
+  check(not node("SAM Tagged Far [relay:R1]").linked and node("SAM Tagged Far [relay:R1]").parent == node("COMMS R1"),
+    "[relay:] relay out of link range: not linked")
+  check(F.logContains("SAM Far [BATTERY REG] -> COMMS R2 power:POWER Gen"), "report line: parent and power source")
+  check(F.logContains("SAM Tagged Far [relay:R1] [BATTERY REG] -> COMMS R1 (NOT LINKED)"), "report line: not linked")
+  F.killGroup(F.groups["COMMS R1"])
+  F.fire({ id = world.event.S_EVENT_DEAD, initiator = F.groups["COMMS R1"].units[1] })
+  F.run(15)
+  check(not node("SAM Tagged [relay:R2]").linked, "[relay:] relay cut off from command: not linked")
+end
+
+-- ---------------------------------------------------------------- 10. alternate command post, relink, DEAD events
+do
+  F.reset()
+  F.addGroup{ name = "CMD Main [alt:Reserve GRN]", units = { { type = "SKP-11", x = 0, z = 0 } } }
+  F.addGroup{ name = "CMD Reserve GRN", units = { { type = "SKP-11", x = 100000, z = 0 } } }
+  F.addGroup{ name = "SAM Mid ACE", units = { { type = "Kub 1S91 str", x = 50000, z = 0 }, { type = "Kub 2P25 ln", x = 50200, z = 0 } } }
+  F.addGroup{ name = "SAM East", units = { { type = "Kub 1S91 str", x = 160000, z = 0 }, { type = "Kub 2P25 ln", x = 160200, z = 0 } } }
+  load()
+  F.run(3)
+  check(node("SAM Mid ACE").parent == node("CMD Main [alt:Reserve GRN]"), "linked to the main post")
+  check(node("SAM East").linked == false or node("SAM East").parent ~= node("CMD Reserve GRN"), "the standby post is no root")
+  local t0 = F.time
+  F.killGroup(F.groups["CMD Main [alt:Reserve GRN]"])
+  F.fire({ id = world.event.S_EVENT_DEAD, initiator = F.groups["CMD Main [alt:Reserve GRN]"].units[1] })
+  F.run(t0 + 100)
+  check(count("CMD Reserve GRN takes over command") == 0, "no takeover before altTakeover (GRN 240 s)")
+  F.run(t0 + 400)
+  check(count("CMD Reserve GRN takes over command") == 1, "takeover after the delay")
+  check(node("SAM Mid ACE").linked and node("SAM Mid ACE").parent == node("CMD Reserve GRN"), "relinked to the alternate post")
+  check(node("SAM Mid ACE").autonomous == false and F.logContains("SAM Mid ACE link to command restored"), "autonomy ends when the link is back")
+end
+do
+  -- a DEAD event alone re-runs the topology: the SAM loses its link at the next update
+  F.reset()
+  F.addGroup{ name = "CMD Post", units = { { type = "SKP-11", x = 0, z = 0 } } }
+  F.addGroup{ name = "SAM K", units = { { type = "Kub 1S91 str", x = 50000, z = 0 }, { type = "Kub 2P25 ln", x = 50200, z = 0 } } }
+  load()
+  F.run(3)
+  local cmdU = F.groups["CMD Post"].units[1]
+  cmdU.alive = false
+  F.fire({ id = world.event.S_EVENT_DEAD, initiator = cmdU })
+  F.run(10)
+  check(not node("SAM K").linked, "after a DEAD event the topology is rebuilt: command gone, link gone")
+end
+
+-- ---------------------------------------------------------------- 11. a late group joins the topology and the site list
+do
+  F.reset()
+  F.addGroup{ name = "CMD Post", units = { { type = "SKP-11", x = 0, z = 0 } } }
+  local J = load()
+  F.run(2)
+  local n0 = #J.sites
+  F.spawn{ name = "SAM Late", units = { { type = "Kub 1S91 str", x = 30000, z = 0 }, { type = "Kub 2P25 ln", x = 30200, z = 0 } } }
+  F.run(4)
+  check(#J.sites == n0 + 1 and J.sites[#J.sites].name == "SAM Late", "a picked-up group is added to the site list")
+  F.run(9)
+  check(node("SAM Late").parent == node("CMD Post") and node("SAM Late").linked, "and linked at the next update")
 end
 
 print(string.format("test_gaps_network: %d passed, %d failed", passed, failed))

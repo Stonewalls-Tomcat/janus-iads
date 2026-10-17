@@ -45,35 +45,33 @@ local PROBLEM = { shooters = "has no launcher or gun", sensors = "has no radar o
 local FILLER = { shooters = "sensors", sensors = "shooters" }
 
 -- ---------------------------------------------------------------- 1. what each role word expects
+-- one unit of the role alone: the matching problem line must be absent (the other one may well appear)
 for word, exp in pairs(EXPECT) do
   for what, roles in pairs(exp) do
     for _, role in ipairs(roles) do
       F.reset()
-      local units = { { type = byRole[role], x = 0, z = 0 } }
-      local other = FILLER[what] and exp[FILLER[what]]
-      if other then units[2] = { type = byRole[other[1]], x = 100, z = 0 } end
       local cat = word == "AWACS" and AIR or nil
-      F.addGroup{ name = word .. " Probe", category = cat, units = units }
+      F.addGroup{ name = word .. " Probe", category = cat, units = { { type = byRole[role], x = 0, z = 0 } } }
       load()
       F.run(2)
-      check(count("PROBE " .. PROBLEM[what]) == 0 and count("Probe " .. PROBLEM[what]) == 0,
-        word .. ": a " .. role .. " (" .. tostring(byRole[role]) .. ") satisfies '" .. what .. "'")
+      check(count("PROBLEM: " .. word .. " Probe " .. PROBLEM[what]) == 0,
+        word .. ": a " .. role .. " (" .. tostring(byRole[role]) .. ") alone satisfies '" .. what .. "'")
     end
-    -- missing entirely
     F.reset()
-    local units = {}
-    local other = FILLER[what] and exp[FILLER[what]]
-    if other then units[1] = { type = byRole[other[1]], x = 100, z = 0 } else units[1] = { type = "Ural-375", x = 0, z = 0 } end
     local cat = word == "AWACS" and AIR or nil
-    F.addGroup{ name = word .. " Probe", category = cat, units = units }
+    F.addGroup{ name = word .. " Probe", category = cat, units = { { type = "Ural-375", x = 0, z = 0 } } }
     load()
     F.run(2)
-    local fillerCounts = false   -- the filler unit's role may satisfy both lists (a gun is its own sensor, a ship both)
-    for _, r in ipairs(roles) do if other and r == other[1] then fillerCounts = true end end
-    if not fillerCounts then
-      check(count("PROBLEM: " .. word .. " Probe " .. PROBLEM[what]) == 1, word .. " without " .. what .. ": problem reported")
-    end
+    check(count("PROBLEM: " .. word .. " Probe " .. PROBLEM[what]) == 1, word .. " without " .. what .. ": problem reported")
   end
+end
+-- a role that is not on the list does not satisfy it
+do
+  F.reset()
+  F.addGroup{ name = "SAM Probe", units = { { type = byRole.SR, x = 0, z = 0 } } }
+  load()
+  F.run(2)
+  check(count("PROBLEM: SAM Probe has no radar or sensor of its own") == 1, "a search radar alone is no SAM fire-control sensor")
 end
 do
   F.reset()
@@ -153,6 +151,7 @@ do
   J.startScheduler(); J.startScheduler()
   local after = F.timers and #F.timers or 0
   check(after - before == 1, "the scheduler starts once (" .. (after - before) .. " timers)")
+  check(F.timers[#F.timers].at == F.time + 0.5, "the first scheduler tick is half a second out")
   local hits = 0
   J.on(world.event.S_EVENT_BIRTH, "t.birth", function() hits = hits + 1 end)
   J.startEvents(); J.startEvents()

@@ -15,7 +15,7 @@ M.net = N
 N.nodes = {}          -- name -> node
 N.list = {}           -- array of nodes
 N.networks = {}       -- key "red/main" -> network
-N.dirty = true
+N.dirty = true   -- mutate: ok[true] N.start builds explicitly
 N.callbacks = { nodeLost = {}, autonomy = {}, linked = {}, takeover = {}, standdown = {}, radio = {}, restored = {}, degraded = {} }
 
 local ROLE_TO_KIND = { CMD = "C2", COMMS = "COMMS", POWER = "POWER", EW = "EW", AWACS = "EW",
@@ -117,7 +117,7 @@ function N.addSite(site)
     airborne = site.roleWord == "AWACS", static = site.static ~= nil,   -- mutate: ok informational fields (check mode, summaries)
     agRadio = kind == "COMMS" and site.tags.ag ~= nil,   -- air-ground radio of a command post (DESIGN 4.1A)
     linkVia = nil, linkDelay = 0, agState = nil, active = true,   -- mutate: ok linkDelay is set on the first link pass
-    alive = true, working = true, powered = true, linked = true, autonomous = false,
+    alive = true, working = true, powered = true, linked = true, autonomous = false,   -- mutate: ok the first update sets every flag
     powerSources = nil, reserveUntil = nil, unlinkedSince = nil, parent = nil,
     emcon = { policy = nil, on = nil, offSince = -1e9, onSince = -1e9, cuedAt = nil, lastCue = -1e9, emitSec = 0 },
   }
@@ -130,14 +130,15 @@ function N.addSite(site)
 end
 
 -- ------------------------------------------------------------------ state from DCS
+-- position of a node from its live units; nil when none is left (callers keep the last known one)
 local function nodePos(node)
   local st = node.site.static
   if st then
     if U.alive(st) then return st:getPoint() end
-    return node.pos
+    return nil
   end
   local g = node.site.group
-  if not (g and g.isExist and g:isExist()) then return node.pos end
+  if not (g and g.isExist and g:isExist()) then return nil end
   local units = g:getUnits() or {}
   for i = 1, #units do
     if U.alive(units[i]) then
@@ -145,7 +146,7 @@ local function nodePos(node)
       if p then return p end
     end
   end
-  return node.pos
+  return nil
 end
 
 local function refreshAlive(node)
@@ -249,7 +250,7 @@ local function assignPower(net)
   local d = net.doctrine
   local r2 = d.powerRange * d.powerRange
   for _, n in ipairs(net.nodes) do
-    if n.kind ~= "POWER" and n.pos then
+    if n.kind ~= "POWER" and n.pos then   -- mutate: ok[and] a POWER node is its own source either way
       local src
       if n.site.tags.power then
         src = {}
@@ -333,7 +334,7 @@ local function computeLinks(net, now)
     elseif reached[n] then
       linked = true
       if reached[n] ~= n then parent = reached[n] end  -- a command post is the root, not its own parent
-    elseif n.kind ~= "C2" and n.kind ~= "POWER" and n.pos then
+    elseif n.kind ~= "C2" and n.kind ~= "POWER" and n.pos then   -- mutate: ok[and] links of command posts and power plants are informational
       local want = findByLabel(net, "C2", n.site.tags.cmd)
       local viaRelay = findByLabel(net, "COMMS", n.site.tags.relay)
       if want then
@@ -448,13 +449,13 @@ function N.update()
     updateAutonomy(net, now)
   end
   if N.dirty and N.onTopology then M.safe("net.topology", N.onTopology) end
-  N.dirty = false
+  N.dirty = false   -- mutate: ok[false] rebuilding every tick costs time only
 end
 
 -- ------------------------------------------------------------------ building, events
 function N.build()
   for _, site in ipairs(M.sites) do N.addSite(site) end
-  for _, n in ipairs(N.list) do n.pos = nodePos(n) end
+  for _, n in ipairs(N.list) do n.pos = nodePos(n) or n.pos end
   N.dirty = true
   N.update()
   local parts = {}
@@ -477,7 +478,7 @@ end
 
 -- A group spawned after start (Olympus, scripts, late activation) that follows the naming rules.
 function N.pickUp(group)
-  if not (group and group.isExist and group:isExist()) then return end
+  if not (group and group.isExist and group:isExist()) then return end   -- mutate: ok[and] defensive: BIRTH hands live groups
   local name = group:getName()
   if N.nodes[name] then return end
   local parsed = M.names.parseGroup(group)
@@ -513,7 +514,7 @@ function N.start()
       N.pickUpStatic(u)
     elseif u and u.getGroup and Object.getCategory(u) == Object.Category.UNIT then   -- mutate: ok defensive checks on DCS event data
       local ok, g = pcall(u.getGroup, u)
-      if ok and g then
+      if ok and g then   -- mutate: ok[and] defensive: getGroup of a live unit
         -- groups are complete a moment after the first BIRTH; pick them up on the next tick
         timer.scheduleFunction(M.wrap("net.pickup", function() N.pickUp(g) end), nil, M.now() + 1)
       end

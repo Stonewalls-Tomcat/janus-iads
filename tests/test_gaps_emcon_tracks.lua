@@ -200,14 +200,14 @@ do
   local b = bandit("Viper 1", 68000, 0)
   load({ RED_DOCTRINE = { base = "SOVIET_PVO_1985", cueHold = 0, minOn = 40 } })
   F.sees["EW N"] = { b }
-  F.run(40)
+  local t = 0
+  while not (JANUS.net and JANUS.net.nodes["SAM K"] and JANUS.net.nodes["SAM K"].emcon.on) and t < 60 do t = t + 1; F.run(t) end
   local on = switchedAt("SAM K", true, 0)
   check(on ~= nil, "up on the cue")
-  F.move(b, 400000, 0)
-  F.sees["EW N"] = {}
-  F.run((on or 0) + 35)
+  F.move(b, 400000, 0)                              -- the cue goes at the next EW poll
+  F.run(on + 30)
   check(F.emitting("SAM K"), "cue gone, no cue hold: still up inside minOn (40 s)")
-  F.run((on or 0) + 70)
+  F.run(on + 55)
   check(not F.emitting("SAM K"), "down after minOn")
 end
 
@@ -333,6 +333,91 @@ do
   local unit = bandit("Viper 9", 5000, 5000)
   local stored = J.tracks.store(pic, unit, { x = 5000, y = 6000, z = 5000 }, 3, { name = "EW X" }, "fixed-wing", nil)
   check(stored and stored.num and pic[stored.id] == stored, "store returns the track it keeps")
+end
+
+-- ---------------------------------------------------------------- 10. more EMCON edges
+do
+  -- the rotation is judged by the EMCON state itself (a nil from the policy must never read as "on")
+  F.reset()
+  cmd()
+  F.addGroup{ name = "EW Solo [emcon:rotating]", units = { { type = "55G6 EWR", x = 20000, z = 0 } } }
+  load()
+  F.run(10)
+  check(node("EW Solo [emcon:rotating]").emcon.on == true and F.groups["EW Solo [emcon:rotating]"].emission == true,
+    "a lone rotating EW is switched on (true, not nil)")
+  -- an EW that is alive but lost its radar leaves the rotation
+  F.reset()
+  cmd()
+  F.addGroup{ name = "EW A [emcon:rotating]", units = { { type = "55G6 EWR", x = 20000, z = 0 } } }
+  local g = F.addGroup{ name = "EW B [emcon:rotating]", units = { { type = "55G6 EWR", x = 20000, z = 20000 }, { type = "generator_5i57", x = 20100, z = 20000 } } }
+  load()
+  F.run(10)
+  F.kill(g.units[1])                                -- radar gone, the generator lives: alive, not working
+  F.run(140)
+  check(node("EW B [emcon:rotating]").alive and not node("EW B [emcon:rotating]").working, "EW B alive but not working")
+  check(node("EW A [emcon:rotating]").emcon.on == true, "the other rotating EW stays up in every period")
+  F.run(260)
+  check(node("EW A [emcon:rotating]").emcon.on == true, "... including the next one")
+end
+do
+  -- a periodic site is held up only by its own radar's tracks, not by the network picture
+  F.reset()
+  cmd()
+  sa6("SAM P", 50000, 0)
+  F.addGroup{ name = "PD Tor [emcon:always]", units = { { type = "Tor 9A331", x = 52000, z = 0 } } }
+  local b = bandit("Viper 1", 60000, 0)
+  load()
+  F.sees["PD Tor [emcon:always]"] = { b }
+  F.run(250)
+  local offs = 0
+  for _, e in ipairs(F.emissionLog) do if e.group == "SAM P" and e.on == false and e.t > 20 then offs = offs + 1 end end
+  check(offs >= 2, "the Tor's track does not hold the periodic SA-6 up (" .. offs .. " OFF switches)")
+end
+do
+  -- [emcon:cued] on an EW (doctrine: always), and a command post with a radar is managed too
+  F.reset()
+  cmd()
+  F.addGroup{ name = "EW Q [emcon:cued]", units = { { type = "55G6 EWR", x = 20000, z = 0 } } }
+  F.addGroup{ name = "CMD Radar [emcon:dark]", units = { { type = "S-300PS 54K6 cp", x = 1000, z = 0 }, { type = "55G6 EWR", x = 1100, z = 0 } } }
+  local J = load()
+  F.run(3)
+  check(J.emcon.policyFor(node("EW Q [emcon:cued]")) == "cued", "an EW can be cued by tag")
+  check(F.groups["CMD Radar [emcon:dark]"].emission == false, "a command post's radar is managed")
+end
+do
+  -- a late group is linked at once (EMCON marks the topology dirty)
+  F.reset()
+  cmd()
+  load()
+  F.run(3)
+  F.spawn{ name = "SAM Late", units = { { type = "Kub 1S91 str", x = 30000, z = 0 }, { type = "Kub 2P25 ln", x = 30200, z = 0 } } }
+  F.run(9)
+  check(node("SAM Late") and node("SAM Late").linked and node("SAM Late").parent ~= nil, "a late group joins the topology")
+end
+
+-- ---------------------------------------------------------------- 11. more track edges
+do
+  F.reset()
+  cmd()
+  F.addGroup{ name = "EW N", units = { { type = "55G6 EWR", x = 20000, z = 0 } } }
+  local b = bandit("Viper 1", 150000, 0, 3000)
+  local J = load({ RED_DOCTRINE = { base = "SOVIET_PVO_1985", idTime = { GRN = 90, REG = 90, VET = 90, ACE = 90 } } })
+  F.run(50)
+  F.sees["EW N"] = { b }                            -- first seen around t = 50
+  for t = 51, 62 do b.alt = 3000 + 100 * (t - 50); F.run(t) end   -- climbing 100 m/s
+  local tr = J.tracks.list(J.net.networks["red/main"].tracks)[1]
+  check(tr and tr.vel and tr.vel.y > 50, "climb shows in the velocity")
+  local first = tr and tr.first or 0
+  F.run(first + 60)
+  check(tr and not tr.declared, "60 s after first contact: not yet declared (idTime 90 s)")
+  F.run(first + 100)
+  check(tr and tr.declared, "after idTime: declared")
+  local pic = {}
+  for i, nm in ipairs({ 5, 3, 9, 1, 7 }) do pic["k" .. i] = { num = nm } end
+  local l = J.tracks.list(pic)
+  local ok = true
+  for i = 2, #l do if l[i - 1].num >= l[i].num then ok = false end end
+  check(ok and #l == 5, "list sorted by track number")
 end
 
 print(string.format("test_gaps_emcon_tracks: %d passed, %d failed", passed, failed))

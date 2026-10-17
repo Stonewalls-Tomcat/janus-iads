@@ -5062,7 +5062,7 @@ M.net = N
 N.nodes = {}          -- name -> node
 N.list = {}           -- array of nodes
 N.networks = {}       -- key "red/main" -> network
-N.dirty = true
+N.dirty = true   -- mutate: ok[true] N.start builds explicitly
 N.callbacks = { nodeLost = {}, autonomy = {}, linked = {}, takeover = {}, standdown = {}, radio = {}, restored = {}, degraded = {} }
 
 local ROLE_TO_KIND = { CMD = "C2", COMMS = "COMMS", POWER = "POWER", EW = "EW", AWACS = "EW",
@@ -5164,7 +5164,7 @@ function N.addSite(site)
     airborne = site.roleWord == "AWACS", static = site.static ~= nil,   -- mutate: ok informational fields (check mode, summaries)
     agRadio = kind == "COMMS" and site.tags.ag ~= nil,   -- air-ground radio of a command post (DESIGN 4.1A)
     linkVia = nil, linkDelay = 0, agState = nil, active = true,   -- mutate: ok linkDelay is set on the first link pass
-    alive = true, working = true, powered = true, linked = true, autonomous = false,
+    alive = true, working = true, powered = true, linked = true, autonomous = false,   -- mutate: ok the first update sets every flag
     powerSources = nil, reserveUntil = nil, unlinkedSince = nil, parent = nil,
     emcon = { policy = nil, on = nil, offSince = -1e9, onSince = -1e9, cuedAt = nil, lastCue = -1e9, emitSec = 0 },
   }
@@ -5177,14 +5177,15 @@ function N.addSite(site)
 end
 
 -- ------------------------------------------------------------------ state from DCS
+-- position of a node from its live units; nil when none is left (callers keep the last known one)
 local function nodePos(node)
   local st = node.site.static
   if st then
     if U.alive(st) then return st:getPoint() end
-    return node.pos
+    return nil
   end
   local g = node.site.group
-  if not (g and g.isExist and g:isExist()) then return node.pos end
+  if not (g and g.isExist and g:isExist()) then return nil end
   local units = g:getUnits() or {}
   for i = 1, #units do
     if U.alive(units[i]) then
@@ -5192,7 +5193,7 @@ local function nodePos(node)
       if p then return p end
     end
   end
-  return node.pos
+  return nil
 end
 
 local function refreshAlive(node)
@@ -5296,7 +5297,7 @@ local function assignPower(net)
   local d = net.doctrine
   local r2 = d.powerRange * d.powerRange
   for _, n in ipairs(net.nodes) do
-    if n.kind ~= "POWER" and n.pos then
+    if n.kind ~= "POWER" and n.pos then   -- mutate: ok[and] a POWER node is its own source either way
       local src
       if n.site.tags.power then
         src = {}
@@ -5380,7 +5381,7 @@ local function computeLinks(net, now)
     elseif reached[n] then
       linked = true
       if reached[n] ~= n then parent = reached[n] end  -- a command post is the root, not its own parent
-    elseif n.kind ~= "C2" and n.kind ~= "POWER" and n.pos then
+    elseif n.kind ~= "C2" and n.kind ~= "POWER" and n.pos then   -- mutate: ok[and] links of command posts and power plants are informational
       local want = findByLabel(net, "C2", n.site.tags.cmd)
       local viaRelay = findByLabel(net, "COMMS", n.site.tags.relay)
       if want then
@@ -5495,13 +5496,13 @@ function N.update()
     updateAutonomy(net, now)
   end
   if N.dirty and N.onTopology then M.safe("net.topology", N.onTopology) end
-  N.dirty = false
+  N.dirty = false   -- mutate: ok[false] rebuilding every tick costs time only
 end
 
 -- ------------------------------------------------------------------ building, events
 function N.build()
   for _, site in ipairs(M.sites) do N.addSite(site) end
-  for _, n in ipairs(N.list) do n.pos = nodePos(n) end
+  for _, n in ipairs(N.list) do n.pos = nodePos(n) or n.pos end
   N.dirty = true
   N.update()
   local parts = {}
@@ -5524,7 +5525,7 @@ end
 
 -- A group spawned after start (Olympus, scripts, late activation) that follows the naming rules.
 function N.pickUp(group)
-  if not (group and group.isExist and group:isExist()) then return end
+  if not (group and group.isExist and group:isExist()) then return end   -- mutate: ok[and] defensive: BIRTH hands live groups
   local name = group:getName()
   if N.nodes[name] then return end
   local parsed = M.names.parseGroup(group)
@@ -5560,7 +5561,7 @@ function N.start()
       N.pickUpStatic(u)
     elseif u and u.getGroup and Object.getCategory(u) == Object.Category.UNIT then   -- mutate: ok defensive checks on DCS event data
       local ok, g = pcall(u.getGroup, u)
-      if ok and g then
+      if ok and g then   -- mutate: ok[and] defensive: getGroup of a live unit
         -- groups are complete a moment after the first BIRTH; pick them up on the next tick
         timer.scheduleFunction(M.wrap("net.pickup", function() N.pickUp(g) end), nil, M.now() + 1)
       end
@@ -5691,9 +5692,9 @@ T.store = store
 function T.poll(node, now)
   node.lastPoll = now
   local g = node.site.group
-  if not (g and g:isExist()) then return 0 end
+  if not (g and g:isExist()) then return 0 end   -- mutate: ok a dead group's controller sees nothing either
   local c = g:getController()
-  if not c then return 0 end
+  if not c then return 0 end   -- mutate: ok[return] defensive: a live group always has a controller
   local dets = c:getDetectedTargets() or {}
   local coa = node.net.coalition
   local n = 0
@@ -6250,7 +6251,7 @@ local function restartTime(n)
   for _, u in ipairs(n.site.units) do
     if by[u.rec.type] then return by[u.rec.type] end
   end
-  return d.restart[n.rangeClass] or d.restart.NONE or 5
+  return d.restart[n.rangeClass] or d.restart.NONE
 end
 
 -- Which policy applies to this node right now.
@@ -6337,7 +6338,6 @@ local function updateCoverage(net)
       n.feedDelay = feeders and fb.delay and (fb.delay[n.tier] or fb.delay.REG) or 0
     end
   end
-  return ews
 end
 
 -- Rotating EW: `share` of the available rotating radars are up at once, the set shifting every `period`.
@@ -6459,7 +6459,7 @@ end
 -- guidance mid-flight). Bookkeeping from S_EVENT_SHOT; bounded by SHOT_HOLD_MAX.
 local function missilesInFlight(n, now)
   local shots = n.emcon.shots
-  if not shots then return false end
+  if not shots then return false end   -- mutate: ok[return] nil and false both mean "none in flight"
   for i = #shots, 1, -1 do   -- mutate: ok a step of -2 from index 1 still visits every entry it must
     local s = shots[i]
     local w = s.weapon
@@ -6487,8 +6487,9 @@ function E.onShot(e)
 end
 
 local function apply(n, on, reason, now)
+  on = on == true   -- DCS wants a boolean; a nil from a policy means dark
   local g = n.site.group
-  if g and g:isExist() and g.enableEmission then
+  if g and g:isExist() and g.enableEmission then   -- mutate: ok[and] defensive: a dead group has nothing to switch
     M.safe("emcon.enable", g.enableEmission, g, on)
   end
   local em = n.emcon
@@ -6551,7 +6552,7 @@ function E.start()
   local O = AI.Option.Ground
   for _, n in ipairs(M.net.list) do
     local g = n.site.group
-    if g and g:isExist() and (n.hasRadar or n.kind == "AAA") then
+    if g and g:isExist() and (n.hasRadar or n.kind == "AAA") then   -- mutate: ok[and] defensive: a dead group at start has no controller to set
       local c = g:getController()
       if c then
         M.safe("emcon.alarm", c.setOption, c, O.id.ALARM_STATE, O.val.ALARM_STATE.RED)
@@ -8263,10 +8264,10 @@ local function inspectGroup(group, parsed, coa)
 
   local expect = EXPECT[parsed.role] or {}   -- mutate: ok[or] every role word has an EXPECT entry
   local function hasAny(set)
-    for role in pairs(set) do
-      if (site.roles[role] or 0) > 0 then return true end
+    for role, n in pairs(site.roles) do
+      if set[role] and n > 0 then return true end
     end
-    return false
+    return false   -- mutate: ok[return] nil and false both mean "none"
   end
   if expect.shooters and not hasAny(expect.shooters) then
     site.problems[#site.problems + 1] = "has no launcher or gun: it will never fire"
@@ -8393,7 +8394,7 @@ function M.scan()
   end
   local dlcs = {}
   for _, site in ipairs(M.sites) do
-    if site.dlc then dlcs[site.dlc] = true end
+    if site.dlc then dlcs[site.dlc] = true end   -- mutate: ok[true] only the keys are read
   end
   for _, d in ipairs(U.keys(dlcs)) do
     add(lines, string_format("This mission uses DCS: %s units: say so in the briefing, players without the DLC cannot join.", d))

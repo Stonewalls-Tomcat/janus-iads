@@ -24,7 +24,7 @@ local function restartTime(n)
   for _, u in ipairs(n.site.units) do
     if by[u.rec.type] then return by[u.rec.type] end
   end
-  return d.restart[n.rangeClass] or d.restart.NONE or 5
+  return d.restart[n.rangeClass] or d.restart.NONE
 end
 
 -- Which policy applies to this node right now.
@@ -111,7 +111,6 @@ local function updateCoverage(net)
       n.feedDelay = feeders and fb.delay and (fb.delay[n.tier] or fb.delay.REG) or 0
     end
   end
-  return ews
 end
 
 -- Rotating EW: `share` of the available rotating radars are up at once, the set shifting every `period`.
@@ -233,7 +232,7 @@ end
 -- guidance mid-flight). Bookkeeping from S_EVENT_SHOT; bounded by SHOT_HOLD_MAX.
 local function missilesInFlight(n, now)
   local shots = n.emcon.shots
-  if not shots then return false end
+  if not shots then return false end   -- mutate: ok[return] nil and false both mean "none in flight"
   for i = #shots, 1, -1 do   -- mutate: ok a step of -2 from index 1 still visits every entry it must
     local s = shots[i]
     local w = s.weapon
@@ -261,8 +260,9 @@ function E.onShot(e)
 end
 
 local function apply(n, on, reason, now)
+  on = on == true   -- DCS wants a boolean; a nil from a policy means dark
   local g = n.site.group
-  if g and g:isExist() and g.enableEmission then
+  if g and g:isExist() and g.enableEmission then   -- mutate: ok[and] defensive: a dead group has nothing to switch
     M.safe("emcon.enable", g.enableEmission, g, on)
   end
   local em = n.emcon
@@ -325,7 +325,7 @@ function E.start()
   local O = AI.Option.Ground
   for _, n in ipairs(M.net.list) do
     local g = n.site.group
-    if g and g:isExist() and (n.hasRadar or n.kind == "AAA") then
+    if g and g:isExist() and (n.hasRadar or n.kind == "AAA") then   -- mutate: ok[and] defensive: a dead group at start has no controller to set
       local c = g:getController()
       if c then
         M.safe("emcon.alarm", c.setOption, c, O.id.ALARM_STATE, O.val.ALARM_STATE.RED)

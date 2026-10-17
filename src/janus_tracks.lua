@@ -117,9 +117,9 @@ T.store = store
 function T.poll(node, now)
   node.lastPoll = now
   local g = node.site.group
-  if not (g and g:isExist()) then return 0 end
+  if not (g and g:isExist()) then return 0 end   -- mutate: ok a dead group's controller sees nothing either
   local c = g:getController()
-  if not c then return 0 end
+  if not c then return 0 end   -- mutate: ok[return] defensive: a live group always has a controller
   local dets = c:getDetectedTargets() or {}
   local coa = node.net.coalition
   local n = 0

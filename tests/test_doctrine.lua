@@ -66,5 +66,13 @@ check(unk == J.Doctrines.US_MODERN and F.logContains("unknown doctrine 'NO_SUCH'
 check(J.getDoctrine("NO_SUCH_EITHER") == J.Doctrines.SOVIET_PVO_1985 and J.getDoctrine(nil) == J.Doctrines.SOVIET_PVO_1985,
   "unknown name or nil without fallback: SOVIET_PVO_1985")
 
+-- derive: a new table key, and a plain value over a table
+local x = J.getDoctrine({ base = "US_MODERN", extra = { a = 1 }, aaa = "off" })
+check(x.extra and x.extra.a == 1, "a custom table may add a table field the base lacks")
+check(x.aaa == "off", "a plain value replaces a table field")
+local nv = J.getDoctrine({ name = "N" }, "NVA_VIETNAM_1965_72")
+check(nv.ambush == S.Doctrines.NVA_VIETNAM_1965_72.ambush and nv.ambush ~= S.Doctrines.SOVIET_PVO_1985.ambush,
+  "no base: the caller's fallback profile, not SOVIET_PVO_1985")
+
 print(string.format("test_doctrine: %d passed, %d failed", passed, failed))
 if failed > 0 then os.exit(1) end
