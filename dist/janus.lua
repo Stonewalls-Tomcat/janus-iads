@@ -5125,7 +5125,7 @@ end
 -- detection range, engagement range (doctrinal reach, never above the DCS figure), its low-level value, range class
 local function ranges(site)
   local det, eng, low, rclass = 0, 0, 0, "NONE"
-  local order = { NONE = 0, SR = 1, MR = 2, LR = 3 }
+  local order = { NONE = 0, SR = 1, MR = 2, LR = 3 }   -- mutate: ok[n] only the order matters
   for _, u in ipairs(site.units) do
     local r = u.rec
     if (r.detectionRange or 0) > det then det = r.detectionRange end
@@ -5502,7 +5502,7 @@ end
 -- ------------------------------------------------------------------ building, events
 function N.build()
   for _, site in ipairs(M.sites) do N.addSite(site) end
-  for _, n in ipairs(N.list) do n.pos = nodePos(n) or n.pos end
+  for _, n in ipairs(N.list) do n.pos = nodePos(n) or n.pos end   -- mutate: ok[or] N.update below sets every position again (refreshAlive)
   N.dirty = true
   N.update()
   local parts = {}
@@ -6090,7 +6090,7 @@ function W.assign(net)
   for _, tr in ipairs(tracks) do tr.threat = W.threat(tr, net, defended) end
   table.sort(tracks, function(a, b)
     if a.threat ~= b.threat then return a.threat > b.threat end
-    return a.num < b.num
+    return a.num < b.num   -- mutate: ok[return] tie order of exactly equal threats: determinism only
   end)
   local load, out = {}, {}
   -- channels a shooter is still using on targets it already had (and that are still tracked) are kept for them, so
@@ -6356,7 +6356,7 @@ local function rotatingOn(n, now)
   for i, m in ipairs(members) do
     if m == n then return ((i - 1 + slot) % k) < up end
   end
-  return true
+  return true   -- mutate: ok a node outside the rotation is down: apply never switches it
 end
 
 -- A gun-laying radar's tracking range (JANUS.Reach `track`, e.g. the Fire Can), or nil.
@@ -6563,7 +6563,7 @@ function E.start()
     local g = n.site.group
     local c = g and g:getController()
     if c then M.safe("emcon.alarm", c.setOption, c, O.id.ALARM_STATE, O.val.ALARM_STATE.RED) end
-    M.net.dirty = true
+    M.net.dirty = true   -- mutate: ok[true] N.addSite marks the network dirty too
   end
   M.on(world.event.S_EVENT_SHOT, "emcon.shot", E.onShot)
   E.tick()
@@ -7773,7 +7773,7 @@ local function protected(n)
   for _, u in ipairs(n.site.units or {}) do
     if u.rec and u.rec.role == "CRAM" then return true end
   end
-  return false
+  return false   -- mutate: ok[return] nil and false both read as unprotected
 end
 
 local function placeName(n)
