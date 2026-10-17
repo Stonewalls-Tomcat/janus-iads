@@ -21,16 +21,22 @@ AA.INTERVAL = 1   -- mutate: ok cadence
 
 local function up(n) return n.alive and n.working and n.powered end   -- mutate: ok a dead node is never working
 
--- gun reach and ceiling from the unit data (largest gun in the group)
+-- gun reach and ceiling (largest gun in the group): the effective figures of JANUS.Reach where listed, else the unit data
 function AA.reach(n)
   if n.aaaReach then return n.aaaReach, n.aaaCeiling end
   local r, c = 0, 0   -- mutate: ok every gun has a reach above 1 m
   for _, u in ipairs(n.site.units) do
     local rec = u.rec
-    if (rec.threatRange or 0) > r then r = rec.threatRange end   -- mutate: ok every gun lists a range
-    local e = rec.envelope
-    local alt = e and e.altMax or (rec.threatRange or 0)   -- mutate: ok every gun lists a range   -- no envelope: assume it reaches as high as it reaches far
-    if alt > c then c = alt end
+    local d = M.reachFor(rec.type)
+    local reach = rec.threatRange or 0
+    if reach > 0 then   -- guns only: a gun-laying radar's own envelope (SON-9 14 km) is not the guns' ceiling
+      if d and d.hi and d.hi < reach then reach = d.hi end
+      if reach > r then r = reach end
+      local e = rec.envelope
+      local alt = e and e.altMax or reach   -- no envelope: assume it reaches as high as it reaches far
+      if d and d.ceil and d.ceil < alt then alt = d.ceil end
+      if alt > c then c = alt end
+    end
   end
   n.aaaReach, n.aaaCeiling = r, c
   return r, c

@@ -30,7 +30,7 @@ do
   F.addGroup{ name = "CMD Post", units = { { type = "SKP-11", x = 0, z = 0 } } }
   F.addGroup{ name = "EW North", units = { { type = "1L13 EWR", x = 0, z = 5000 } } }
   F.addGroup{ name = "SAM SA-6 A", units = { { type = "Kub 1S91 str", x = 10000, z = 0 }, { type = "Kub 2P25 ln", x = 10200, z = 0 } } }
-  local jet = F.addGroup{ name = "Viper", coalition = BLUE, category = AIR, units = { { type = "F-16C_50", x = 30000, z = 0, alt = 4000 } } }.units[1]
+  local jet = F.addGroup{ name = "Viper", coalition = BLUE, category = AIR, units = { { type = "F-16C_50", x = 28000, z = 0, alt = 4000 } } }.units[1]   -- 18 km: inside 0.8 x the 24 km doctrinal Kub reach
   local J = load()
   local got = {}
   local function rec(ev) got[#got + 1] = ev end

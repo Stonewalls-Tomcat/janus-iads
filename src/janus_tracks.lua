@@ -32,6 +32,14 @@ T.CLASS = { [0] = "fixed-wing", [1] = "helicopter" }
 
 local AIR = { [0] = true, [1] = true }   -- Unit.Category AIRPLANE, HELICOPTER
 
+T.EW_FRESH = 15         -- an EW plot older than this no longer cues a dark battery (3 EW polls)
+
+-- The early-warning estimate of a track: its last EW plot while fresh, else nil (DESIGN 4.4, owner 2026-10-17)
+function T.ewPlot(tr, now)
+  if tr.ewAt and now - tr.ewAt <= T.EW_FRESH then return tr.ewPos end
+  return nil
+end
+
 local function isSensor(n)
   return n.alive and n.working and n.powered and n.hasRadar and n.emcon.on ~= false
 end
@@ -90,6 +98,7 @@ local function store(picture, obj, pos, now, node, class, dwell)
   end
   tr.pos, tr.t = pos, now
   tr.sensors[node.name] = now
+  if node.kind == "EW" then tr.ewPos, tr.ewAt = pos, now end   -- an early-warning plot (ground EWR or AEW)
   if not tr.typeKnown then
     local by = classifiedBy(node, tr, pos)
     if by then identify(tr, obj, by, now) end

@@ -308,7 +308,12 @@ Source: `src/janus_arm.lua` (+ hooks in `janus_emcon.lua`, `janus_wta.lua`; doct
 **Phase 5: ambush, suppress, kill (owner, 2026-10-01; after bench 07 round 1).** How a SAM site is defeated in
 Janus is how Wild Weasels did it: one flight suppresses it, a DEAD flight kills it while it is down.
 - **Ambush.** A cued SAM radar stays dark until its target is firmly inside its ring: doctrine `ambush` x the
-  engagement range (Soviet and Russian 0.8, NATO and US 1.0, Vietnam 0.7). The crew is ready from the cue (cueFactor
+  engagement range (Soviet and Russian 0.8, Vietnam 0.7; NATO and US 1.3 since 2026-10-17: no ambush, the battery
+  is up as the target nears its zone and fires at maximum range). **2026-10-17 (owner):** the engagement
+  range is the doctrinal reach at the target's height (`JANUS.Reach`, docs/REACH.md), not the DCS ThreatRange.
+  Under `cueSource = "ew"` (Soviet, Russian, NVA), only a fresh early-warning plot inside the ring brings the radar up,
+  judged at the EW's position for the target. Gun radars (Fire Can) are cued the same way from their tracking range.
+  A battery that ran dry stays dry until it launches again. The crew is ready from the cue (cueFactor
   x range, cue delay counted from then); once up, the ring does not switch it off (cue hold applies).
 - **EW and AWACS watch.** They hold the picture and pass detected ARMs over the network (doctrine netDelay).
 - **Protection.** A SAM goes dark only for an anti-radiation weapon that it, or the network (EW, AWACS, other sites),

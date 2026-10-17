@@ -38,7 +38,7 @@ local DEFENDED = { C2 = true, BATTERY = true, PD = true, EW = true }
 -- What DCS really does, where it differs from the unit data (bench 04, probe run 4):
 -- the Hawk only launches once its TR locks at ~13-15 nm, so its useful reach is ~25 km, not the 45 km in the data;
 -- the Patriot engaged two targets 3 s apart although its data lists one channel.
-W.DCS_REACH = { ["Hawk ln"] = 25000 }
+W.DCS_REACH = { ["Hawk ln"] = 25000 }   -- DCS behaviour, not doctrine: doctrinal reach is JANUS.Reach (janus_doctrine)
 W.DCS_CHANNELS = { ["Patriot str"] = 2 }
 
 -- Engagement envelope of a battery (cached): R, minimum range, altitude band, target channels.
@@ -62,7 +62,8 @@ function W.envelope(n)
     end
   end
   if rMin <= 0 then rMin = R * 0.05 end   -- no tracker data: 5 % of range  -- mutate: ok (<= 1 m is the same)
-  n.env = { R = R, rMin = rMin, aMin = aMin, aMax = aMax, channels = ch, base = BASE_PK[n.rangeClass] or BASE_PK.NONE }
+  local Rlo = math_min(R, (n.engageLow or 0) > 0 and n.engageLow or R)   -- low-level reach (JANUS.Reach lo)
+  n.env = { R = R, Rlo = Rlo, rMin = rMin, aMin = aMin, aMax = aMax, channels = ch, base = BASE_PK[n.rangeClass] or BASE_PK.NONE }
   return n.env
 end
 
@@ -73,8 +74,9 @@ local function pkAt(n, env, p, v)
   if h < env.aMin * 0.5 or h > env.aMax then return 0 end
   local d2 = dx * dx + dz * dz
   local slant = math_sqrt(d2 + h * h)
-  if slant > env.R or slant < env.rMin then return 0 end
-  local frac = slant / env.R
+  local R = M.reachAt(env.R, env.Rlo, h)
+  if slant > R or slant < env.rMin then return 0 end
+  local frac = slant / R
   local pk = env.base
   if frac > 0.7 then pk = pk * (1 - (frac - 0.7) / 0.3 * 0.6) end
   if v then
@@ -173,9 +175,29 @@ local function refreshAmmo(n)
     end
   end
   if known then
-    if n.ammo ~= 0 and total == 0 then M.info("wta", string_format("%s %s out of missiles", n.net.key, n.name)) end
-    n.ammo = total
+    if total == 0 then
+      if not n.dry then
+        n.dry = true
+        M.info("wta", string_format("%s %s out of missiles", n.net.key, n.name))
+      end
+    elseif n.dry and not n.dryNoted then
+      -- DCS can report rounds again on spent launchers (Breakwater 2026-10-16: an empty SA-10 read as loaded,
+      -- was cued twice and never fired). A dry battery stays dry until it launches again (W.rearm).
+      n.dryNoted = true
+      M.info("wta", string_format("%s %s: DCS reports %d missile(s) after running dry - held dry until it fires",
+        n.net.key, n.name, total))
+    end
+    n.ammo = n.dry and 0 or total
   end
+end
+
+-- A dry battery is loaded again: it launched (emcon's S_EVENT_SHOT) or a script resupplied it (JANUS.wta.rearm).
+function W.rearm(n, why)
+  if type(n) == "string" then n = M.net.nodes[n] end
+  if not (n and n.dry) then return false end
+  n.dry, n.dryNoted, n.ammo = nil, nil, nil   -- nil = unknown until the next refresh
+  M.info("wta", string_format("%s %s rearmed (%s)", n.net.key, n.name, why or "script"))
+  return true
 end
 
 local SHOOTERS = { BATTERY = true, PD = true, NAVAL = true }   -- ships bid from their NAVAL_AD envelopes (Phase 4)

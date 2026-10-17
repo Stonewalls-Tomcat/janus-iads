@@ -1,6 +1,41 @@
 # Changelog
 
 ## 1.1.0 (unreleased)
+- **Doctrine pass after the Breakwater review** (owner 2026-10-17, squadron night 2026-10-16). In that mission an
+  SA-10 came up on a 96 km cue from DCS's 120 km range, while its 5V55s never flew beyond 72 km. It then fired all
+  48 rounds, and was cued twice more after running dry.
+  - **Doctrinal reach** (`JANUS.Reach`, `docs/REACH.md`): the far boundary of the kill zone against a fighter,
+    per DCS type, with a low-level value where it is sourced. Examples: S-300PS 75 / 40 km, S-200 150 km vs
+    fighters, S-75 35 / 18 km, S-125 17 / 10 km, Buk-M1 35 km, KS-19 12 km (11 km ceiling).
+    - It feeds the engagement range, the WTA Pk envelope, the ambush ring (at the target's height) and the gun reach
+      and ceiling.
+    - Setting `REACH`: `false` uses the DCS figures; a table overrides entries by type.
+  - **EW-only cue** (doctrine `cueSource`, "ew" in SOVIET_PVO_1985, RUSSIA_MODERN and NVA_VIETNAM_1965_72).
+    - A dark cued SAM radar comes up only on a fresh early-warning plot (EW radar or AEW, `JANUS.tracks.ewPlot`,
+      `EW_FRESH` 15 s) of its target inside the ring, measured where the EW puts the target.
+    - Gun radars, point defence and other batteries no longer wake it.
+    - Without EW cover the autonomous policy applies as before.
+  - **NATO / US no longer ambush:** NATO_COLDWAR and US_MODERN `ambush` 1.3. The battery comes up as a network plot
+    (CRC, AWACS, Link 16) nears its zone, so it is locked and fires at maximum range; the WTA's `lead` still decides
+    when it is cued. It was 1.0, which lit the radar only once the target was already at maximum range.
+  - **Fire Can EMCON:** the same three doctrines put AAA radars on `cued`. A SON-9 is dark until an EW plot is inside
+    `ambush` × its 35 km tracking range, and falls back to its autonomous policy without EW cover. Fix: a cued gun
+    radar was looked up in the WTA's assignments and could never come up.
+  - **Dry battery latch:** once a battery reports no missiles it stays dry until it launches again or a script
+    calls `JANUS.wta.rearm(site)`. DCS reported rounds again on spent S-300 launchers. Janus logs that oddity once.
+  - **Presets:**
+    - Reduced strength per unit (`reduced`; `spawnBattery(..., { reduced = true })`).
+    - SA-10 battalion: the 54K6 is kept because DCS requires it; the Big Bird moves to the new SA-10-REGIMENT;
+      12 TELs, reduced 2 launch groups (6).
+    - SA-11 renamed battalion, reduced 4.
+    - SA-2, SA-3, SA-5 and SA-6 reduced; SA-6 gets optional regiment acquisition; SA-8 Dog Ear note fixed.
+    - SA-13 4-6; SA-19 6; Pantsir 6/3; Patriot 8/4; Hawk assault fire unit; NASAMS, IRIS-T and HQ-7 reduced.
+    - Rapier troop; Roland 6; Avenger 6; new LINEBACKER; Chaparral without Vulcans; Gepard 6-7.
+    - AAA batteries: reduced counts and sources added.
+    - WWII: FLAK-LIGHT no longer lists the 8.8 cm `flak36`; FLAK-88 gets 2 cm close defence and searchlights at
+      2 km; new HAA-UK-37IN, JP-HEAVY and JP-LIGHT presets; the US WWII platoon follows FM 44-2.
+  - `tests/test_reach.lua` (110 checks). `test_network` and `test_phase2` pin `REACH = false`: they test cueing
+    mechanics on the DCS figures.
 - **Track type identification gated by sensor class** (owner 2026-10-12, AI_BRAIN 4.2 d; DESIGN 4.2). A track gets
   `typeKnown` / `typeName` only from a node that could really classify it: a radar in the new setting
   `NCTR_RADARS` (default `Patriot str` and the NASAMS Sentinel `NASAMS_Radar_MPQ64F1`; AWACS and Aegis identify by

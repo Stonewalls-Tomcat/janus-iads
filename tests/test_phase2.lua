@@ -11,7 +11,11 @@ local passed, failed = 0, 0
 local function check(cond, msg)
   if cond then passed = passed + 1 else failed = failed + 1; print("  FAIL: " .. msg) end
 end
+-- These tests exercise cueing / WTA mechanics on the DCS unit figures; the doctrinal reach table (JANUS.Reach) has
+-- its own tests in test_reach.lua.
 local function load(settings)
+  settings = settings or {}
+  if settings.REACH == nil then settings.REACH = false end
   JANUS_SETTINGS = settings
   assert(loadfile(JANUS_FILE))()
   return JANUS

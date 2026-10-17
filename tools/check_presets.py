@@ -52,12 +52,27 @@ def main():
                 else:
                     errors.append('%s: unknown DCS type `%s`' % (pid, t))
                 continue
+            rd = u.get('reduced')
+            if rd is not None:
+                c = u.get('count', 1)
+                hi = c[1] if isinstance(c, list) else c
+                if not (isinstance(rd, int) and 0 <= rd <= hi):
+                    errors.append('%s: `%s` reduced count %r must be 0..%d' % (pid, t, rd, hi))
             ur = units[t]['role']
             if ur not in COMPAT.get(role, {role}):
                 errors.append('%s: `%s` is role %s in the unit DB, preset says %s' % (pid, t, ur, role))
         for r in p.get('essential', []):
             if r not in roles_present:
                 errors.append('%s: essential role %s has no unit' % (pid, r))
+        if any('reduced' in u for u in p.get('units', [])):
+            def red(u):
+                if 'reduced' in u:
+                    return u['reduced']
+                c = u.get('count', 1)
+                return c[0] if isinstance(c, list) else c
+            for r in p.get('essential', []):
+                if sum(red(u) for u in p.get('units', []) if u.get('role') == r) < 1:
+                    errors.append('%s: reduced strength leaves essential role %s with no unit' % (pid, r))
         for u in p.get('aaa_ring', []) or []:
             if u.get('type') not in units:
                 errors.append('%s: aaa_ring type `%s` unknown' % (pid, u.get('type')))
@@ -70,7 +85,10 @@ def main():
          'against `data/units.json`). Real-world compositions are **approximate**: tables of organisation changed by '
          'year, army and export customer; each preset lists its sources.\n\n'
          'Everything in `CoreMods` is free DCS content, including the Currenthill pack (`CHAP_*`: Pantsir-S1, Tor-M2, '
-         'IRIS-T SLM, Project 22160). Presets that use paid DLC units say so in a box.\n' % len(presets)]
+         'IRIS-T SLM, Project 22160). Presets that use paid DLC units say so in a box.\n\n'
+         '**Count** is the full table of organisation (a range: optional units). **Reduced** is a doctrinally plausible '
+         'reduced-strength unit: `JANUS.spawnBattery(preset, point, { reduced = true })`; blank = as Count (its minimum). '
+         'Engagement ranges Janus uses (often shorter than DCS lists) are in `docs/REACH.md`.\n' % len(presets)]
     for pid in sorted(presets, key=lambda k: (presets[k].get('era', ''), k)):
         p = presets[pid]
         L.append('## `%s` - %s\n' % (pid, p.get('name', '')))
@@ -80,16 +98,17 @@ def main():
             L.append('> **Requires the DCS: %s DLC.** A mission that uses these units only loads for players and '
                      'servers that own it; Janus warns about this in the setup report and `spawnBattery` refuses the '
                      'preset when the DLC is missing.\n' % ' + '.join(p['_needed']))
-        L.append('| Role | DCS type | Count | Missiles | Layout | Note |\n|---|---|---|---|---|---|')
+        L.append('| Role | DCS type | Count | Reduced | Missiles | Layout | Note |\n|---|---|---|---|---|---|---|')
         for u in p.get('units', []):
             c = u.get('count')
             c = '%d-%d' % tuple(c) if isinstance(c, list) else str(c)
+            rd = '' if u.get('reduced') is None else str(u['reduced'])
             lay = []
             if u.get('ring'):
                 lay.append('ring %d m' % u['ring'])
             if u.get('spacing'):
                 lay.append('spacing %d m' % u['spacing'])
-            L.append('| %s | `%s` | %s | %s | %s | %s |' % (u.get('role'), u.get('type'), c, u.get('missiles', ''),
+            L.append('| %s | `%s` | %s | %s | %s | %s | %s |' % (u.get('role'), u.get('type'), c, rd, u.get('missiles', ''),
                                                           ', '.join(lay), u.get('note', '')))
         if p.get('aaa_ring'):
             L.append('\nOptional AAA ring: ' + ', '.join('%d× `%s`%s' % (a['count'], a['type'], ' at %d m' % a['ring'] if a.get('ring') else '')

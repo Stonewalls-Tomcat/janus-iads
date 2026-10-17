@@ -37,7 +37,10 @@ SP.CENTRE_ORDER = { "TR", "STR", "SR", "SHORAD", "CRAM", "AAA_FC", "AAA", "EWR" 
 local CENTRE_ROLES = {}
 for i, r in ipairs(SP.CENTRE_ORDER) do CENTRE_ROLES[r] = i end
 
-local function countOf(u, full)
+-- units of one preset entry: `reduced` (a doctrinally plausible reduced-strength unit, the entry's `reduced` count where
+-- it has one), else the maximum with `full`, else the minimum (0 for optional units)
+local function countOf(u, full, reduced)
+  if reduced and u.reduced ~= nil then return u.reduced end
   local c = u.count
   if type(c) == "table" then
     return full and c[2] or c[1]     -- the minimum (0 for optional units) unless `full`
@@ -58,16 +61,16 @@ end
 SP.roleWord = roleWord
 
 -- unit offsets (x north, z east) before rotation, from the preset
-function SP.layout(preset, full)
+function SP.layout(preset, full, reduced)
   local out = {}
   local centre, cRank
   for i, u in ipairs(preset.units) do
     local r = CENTRE_ROLES[u.role]
-    if r and countOf(u, full) > 0 and (not cRank or r < cRank) then centre, cRank = i, r end
+    if r and countOf(u, full, reduced) > 0 and (not cRank or r < cRank) then centre, cRank = i, r end
   end
   local side, back = 0, 0
   for i, u in ipairs(preset.units) do
-    local n = countOf(u, full)
+    local n = countOf(u, full, reduced)
     for k = 1, n do
       local dx, dz
       if i == centre and k == 1 then
@@ -168,7 +171,7 @@ function M.spawnBattery(presetName, point, opts)
   local ctry = opts.country or (coa == 2 and country.id.USA or country.id.RUSSIA)
   local tier = opts.tier and SKILL[opts.tier] and opts.tier or "REG"
   local hdg = math_rad(opts.heading or 0)
-  local units = SP.layout(preset, opts.full)
+  local units = SP.layout(preset, opts.full, opts.reduced)
   local role = roleWord(preset)
   local naval = role == "SHIP"
   local limit = SP.limitFor(units, opts)

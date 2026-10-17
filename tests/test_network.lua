@@ -10,7 +10,11 @@ local passed, failed = 0, 0
 local function check(cond, msg)
   if cond then passed = passed + 1 else failed = failed + 1; print("  FAIL: " .. msg) end
 end
+-- These tests exercise cueing / WTA mechanics on the DCS unit figures; the doctrinal reach table (JANUS.Reach) has
+-- its own tests in test_reach.lua.
 local function load(settings)
+  settings = settings or {}
+  if settings.REACH == nil then settings.REACH = false end
   JANUS_SETTINGS = settings
   assert(loadfile(JANUS_FILE))()
   return JANUS
@@ -110,8 +114,8 @@ do
   J = load{ RED_DOCTRINE = "NATO_COLDWAR" }
   F.sees["EW North"] = { b }
   F.run(40)
-  check(J.Doctrines.NATO_COLDWAR.ambush == 1.0 and J.Doctrines.US_MODERN.ambush == 1.0 and J.Doctrines.RUSSIA_MODERN.ambush == 0.8
-    and J.Doctrines.NVA_VIETNAM_1965_72.ambush == 0.7 and J.Doctrines.SOVIET_PVO_1985.ambush == 0.8, "ambush depth per doctrine")
+  check(J.Doctrines.NATO_COLDWAR.ambush == 1.3 and J.Doctrines.US_MODERN.ambush == 1.3 and J.Doctrines.RUSSIA_MODERN.ambush == 0.8
+    and J.Doctrines.NVA_VIETNAM_1965_72.ambush == 0.7 and J.Doctrines.SOVIET_PVO_1985.ambush == 0.8, "ambush depth per doctrine (NATO / US 1.3: up before the zone, owner 2026-10-17)")
 end
 
 -- ---------------------------------------------------------------- 2b. restart rule with a custom doctrine table

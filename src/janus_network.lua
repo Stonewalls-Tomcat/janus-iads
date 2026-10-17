@@ -75,24 +75,32 @@ local function networkFor(coalition, name)
   return net
 end
 
+-- detection range, engagement range (doctrinal reach, never above the DCS figure), its low-level value, range class
 local function ranges(site)
-  local det, eng, rclass = 0, 0, "NONE"
+  local det, eng, low, rclass = 0, 0, 0, "NONE"
   local order = { NONE = 0, SR = 1, MR = 2, LR = 3 }
   for _, u in ipairs(site.units) do
     local r = u.rec
     if (r.detectionRange or 0) > det then det = r.detectionRange end
-    if SHOOTER_ROLES[r.role] and (r.threatRange or 0) > eng then eng = r.threatRange end
+    if SHOOTER_ROLES[r.role] then
+      local e = r.threatRange or 0
+      local d = M.reachFor(r.type)
+      if d and d.hi and d.hi < e then e = d.hi end
+      local l = (d and d.lo and d.lo < e) and d.lo or e
+      if e > eng then eng = e end
+      if l > low then low = l end
+    end
     local rc = r.rangeClass or "NONE"
     if order[rc] and order[rc] > order[rclass] then rclass = rc end
   end
-  return det, eng, rclass
+  return det, eng, rclass, low
 end
 
 function N.addSite(site)
   if N.nodes[site.name] then return N.nodes[site.name] end
   local kind = ROLE_TO_KIND[site.roleWord] or "BATTERY"
   local net = networkFor(site.coalition, site.tags.net or "main")
-  local det, eng, rclass = ranges(site)
+  local det, eng, rclass, low = ranges(site)
   -- sensor classes for type identification (DESIGN 4.2): a radar with NCTR (settings NCTR_RADARS) or an optical sensor
   local hasRadar, nctr, optic = false, false, false
   local nctrTypes = M.settings.NCTR_RADARS or {}
@@ -105,7 +113,7 @@ function N.addSite(site)
   end
   local node = {
     name = site.name, site = site, kind = kind, net = net, tier = tierOf(site),
-    detectionRange = det, engageRange = eng, rangeClass = rclass, hasRadar = hasRadar, nctr = nctr, optic = optic,
+    detectionRange = det, engageRange = eng, engageLow = low, rangeClass = rclass, hasRadar = hasRadar, nctr = nctr, optic = optic,
     airborne = site.roleWord == "AWACS", static = site.static ~= nil,   -- mutate: ok informational fields (check mode, summaries)
     agRadio = kind == "COMMS" and site.tags.ag ~= nil,   -- air-ground radio of a command post (DESIGN 4.1A)
     linkVia = nil, linkDelay = 0, agState = nil, active = true,   -- mutate: ok linkDelay is set on the first link pass

@@ -145,8 +145,8 @@ do
   check(byName(cn, "EW North") == nil and byName(cn, "SAM SA-10 Hama") == nil, "radars and SAMs are not command nodes")
   -- SAM zones
   local z = byName(G.samZones(RED), "SAM SA-10 Hama")
-  check(z and z.name == "SAM SA-10 Hama" and z.r == 120000 and z.rMin == 2000 and z.altMax == 27000 and z.emitting == false,
-    "SAM zone with envelope, dark (not cued yet)")
+  check(z and z.name == "SAM SA-10 Hama" and z.r == 75000 and z.rMin == 2000 and z.altMax == 27000 and z.emitting == false,
+    "SAM zone with envelope (doctrinal 75 km S-300PS reach, not DCS 120 km), dark (not cued yet)")
   local tor = byName(G.samZones(RED), "PD Tor")
   check(tor and tor.kind == "PD" and tor.r == 12000, "point defence has a zone too")
   check(byName(G.samZones(RED), "SAM Radar Only") == nil and byName(G.samZones(RED), "EW North") == nil,

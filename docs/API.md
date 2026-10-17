@@ -87,7 +87,7 @@ Builds the battery from its real-world preset (`JANUS.Presets`, listed in [BATTE
 nearest ground flat enough for all its units to fire, and Janus takes it into the network.
 - `point`: `{ x, z }` (or `{ x, y }` as the Mission Editor gives it).
 - `opts`: `coalition` (1 / 2), `country` (DCS country id; default Russia / USA), `label`, `tier` (`GRN/REG/VET/ACE`,
-  also sets the DCS skill), `heading` (degrees), `full` (optional units too), `aaa` (the preset's gun ring as a
+  also sets the DCS skill), `heading` (degrees), `full` (optional units too), `reduced` (the preset's doctrinally plausible reduced strength, e.g. an SA-10 battalion of 2 launch groups), `aaa` (the preset's gun ring as a
   separate `AAA ... guns` group), `search` (metres, default 5000), `maxSlope` (degrees; default the strictest DCS
   limit of its units), `tags` (e.g. `"[net:North]"`).
 - Returns the group name and `{ x, z, slope, limit, units, aaa }`, or `nil` and the reason (no flat ground, no water

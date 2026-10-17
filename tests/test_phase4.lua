@@ -55,7 +55,7 @@ do
   check(roe("AAA S-60 Bridge") == HOLD and roe("AAA KS-19 Belt") == HOLD, "guns start holding fire")
   check(count("AAA S-60 Bridge holds fire (flak trap set)") == 1, "trap set logged")
   local reach, ceiling = J.aaa.reach(J.net.nodes["AAA S-60 Bridge"])
-  check(reach == 6000 and ceiling == 6000, "S-60 reach 6 km, ceiling from its reach (no envelope)")
+  check(reach == 6000 and ceiling == 5000, "S-60 reach 6 km, effective ceiling 5 km (JANUS.Reach)")
   F.move(b, 5000, 0)                            -- inside KS-19's trap (0.7 x 20 km), outside the S-60's (4.2 km)
   F.run(10)
   check(roe("AAA KS-19 Belt") == OPEN and roe("AAA S-60 Bridge") == HOLD, "only the gun whose trap it entered opens")
@@ -361,13 +361,24 @@ do
   local SP = J.spawn
   -- layout: the fire-control radar at the centre, launchers on the ring, optional trucks only with `full`
   local L = SP.layout(J.Presets["SA-2"])
-  check(#L == 11 and L[1].type == "SNR_75V" and L[1].dx == 0 and L[1].dz == 0, "SA-2: Fan Song at the centre, 11 units, the two ZILs the minimum")
+  check(#L == 10 and L[1].type == "SNR_75V" and L[1].dx == 0 and L[1].dz == 0, "SA-2: Fan Song at the centre, 10 units (RD-75 optional), the two ZILs the minimum")
   local onRing = 0
   for _, u in ipairs(L) do
     if u.type == "S_75M_Volhov" and math.abs(math.sqrt(u.dx * u.dx + u.dz * u.dz) - 70) < 0.01 then onRing = onRing + 1 end
   end
   check(onRing == 6, "six launchers on the 70 m ring")
   check(#SP.layout(J.Presets["SA-2"], true) == 15, "full: six ZIL transloaders")
+  -- reduced strength (owner, 2026-10-17): the preset's `reduced` counts
+  local function n(list, t) local c = 0; for _, u in ipairs(list) do if u.type == t then c = c + 1 end end; return c end
+  local R = SP.layout(J.Presets["SA-2"], false, true)
+  check(#R == 5 and n(R, "S_75M_Volhov") == 3 and n(R, "S_75_ZIL") == 0 and n(R, "p-19 s-125 sr") == 1, "SA-2 reduced: Fan Song, P-19, 3 launchers")
+  local S = SP.layout(J.Presets["SA-10"], false, true)
+  check(n(S, "S-300PS 5P85C ln") == 2 and n(S, "S-300PS 5P85D ln") == 4 and n(S, "S-300PS 54K6 cp") == 1
+    and n(S, "S-300PS 40B6MD sr") == 1 and n(S, "S-300PS 64H6E sr") == 0, "SA-10 reduced battalion: 2 launch groups (2 S + 4 D), CP and Clam Shell kept for DCS")
+  local Sf = SP.layout(J.Presets["SA-10"])
+  check(n(Sf, "S-300PS 5P85C ln") + n(Sf, "S-300PS 5P85D ln") == 12, "SA-10 battalion: 12 TELs")
+  local Sr = SP.layout(J.Presets["SA-10"], true, true)
+  check(n(Sr, "S-300PS 5P85C ln") == 2 and n(Sr, "generator_5i57") == 2, "reduced wins over full where set; full elsewhere")
   local H = SP.layout(J.Presets["HAWK"])
   check(H[1].type == "Hawk pcp" and H[1].dx < -60, "Hawk: the command post goes behind")
   local centre
@@ -404,7 +415,7 @@ do
   F.heightFn = nil
   local sn = J.spawnBattery("SA-2", { x = 50000, z = 50000 }, { heading = 90, aaa = true, label = "Lima" })
   local d = F.added[#F.added - 1].data
-  check(sn == "SAM Lima REG" and #d.units == 11, "SA-2 group")
+  check(sn == "SAM Lima REG" and #d.units == 10, "SA-2 group")
   check(math.abs(d.units[2].x - 50000) < 0.01 and math.abs(d.units[2].y - 50070) < 0.01, "heading 90: launcher 1 due east")
   local g = F.added[#F.added].data
   check(g.name == "AAA Lima guns REG" and #g.units == 6, "the gun ring as its own AAA group (4 ZU-23 + 2 S-60)")

@@ -45,6 +45,11 @@ M.defaults = {
     ["NASAMS_Radar_MPQ64F1"] = true,    -- AN/MPQ-64 Sentinel: NCTR "to identify threat aircraft"
   },
   VISUAL_ID_RANGE = 9260,    -- metres (5 NM): an optical sensor names the type of an aircraft this close
+  -- Engagement ranges (owner, 2026-10-17): DCS lists some weapons at their ballistic or best-case range (KS-19 20 km,
+  -- S-300PS 120 km); Janus uses the doctrinal reach in JANUS.Reach (janus_doctrine.lua) instead. REACH = false uses
+  -- the DCS figures only; REACH = { ["<DCS type>"] = { hi = metres, lo = metres } } replaces one entry
+  -- (["<DCS type>"] = false removes it). Leave it unset for the doctrinal table.
+  REACH = nil,
   -- Role words at the start of a group name (case-insensitive). Change these if your naming differs.
   ROLE_WORDS = {
     SAM = "SAM", EW = "EW", CMD = "CMD", PD = "PD", AAA = "AAA",

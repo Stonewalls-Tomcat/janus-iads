@@ -17,6 +17,7 @@ E.SHOT_HOLD_MAX = 120   -- a site never stays up longer than this for one missil
 local POLICIES = { always = true, dark = true, cued = true, periodic = true, rotating = true }
 E.POLICIES = POLICIES
 local MANAGED = { EW = true, BATTERY = true, PD = true, AAA = true, NAVAL = true, C2 = true }
+local WTA_KINDS = { BATTERY = true, PD = true, NAVAL = true }   -- kinds the WTA assigns targets to (janus_wta SHOOTERS)
 
 local function restartTime(n)
   local d = n.net.doctrine
@@ -33,6 +34,11 @@ function E.policyFor(n)
   local tag = n.site.tags.emcon
   if tag and POLICIES[string.lower(tag)] then return string.lower(tag) end
   local d = n.net.doctrine
+  if n.kind == "AAA" and d.emcon.AAA == "cued" then
+    -- a gun radar on cued EMCON is cued like a battery; without EW cover it falls back to its autonomous policy
+    if n.covered then return "cued" end
+    return d.autonomous.AAA or "always"   -- mutate: ok fallback only for a custom table missing a kind
+  end
   if n.kind == "BATTERY" or n.kind == "PD" then
     -- a battery that still gets early warning (through the network, or by c2LossCue after losing command)
     -- keeps its linked EMCON policy; without it the crew falls back to searching on its own radar
@@ -128,6 +134,38 @@ local function rotatingOn(n, now)
   return true
 end
 
+-- A gun-laying radar's tracking range (JANUS.Reach `track`, e.g. the Fire Can), or nil.
+local function trackRange(n)
+  if n.fcTrack == nil then
+    n.fcTrack = false
+    for _, u in ipairs(n.site.units) do
+      local r = M.reachFor(u.rec.type)
+      if r and r.track then n.fcTrack = math.max(n.fcTrack or 0, r.track) end
+    end
+  end
+  return n.fcTrack or nil
+end
+
+-- Range a cued node is cued from (x cueFactor): gun radars from their tracking range, others from their reach.
+function E.cueBase(n)
+  if n.kind == "AAA" then
+    local t = trackRange(n)
+    if t then return t end
+  end
+  return n.engageRange > 0 and n.engageRange or n.detectionRange
+end
+
+-- Radius (before the doctrine's ambush factor) a dark cued radar waits for: a battery's reach at the target's height
+-- (JANUS.Reach hi / lo through the WTA envelope); a gun radar's tracking range, so it is locked before the guns reach.
+function E.ring(n, h)
+  if (n.kind == "BATTERY" or n.kind == "PD") and M.wta then   -- mutate: ok every built network has the wta module
+    local env = M.wta.envelope(n)
+    return M.reachAt(env.R, env.Rlo, h)
+  end
+  if n.kind == "AAA" and trackRange(n) then return trackRange(n) end
+  return M.reachAt(n.engageRange, n.engageLow, h)
+end
+
 -- What the policy wants; returns wantOn, reason.
 function E.want(n, policy, now)
   local em = n.emcon
@@ -135,10 +173,11 @@ function E.want(n, policy, now)
   if policy == "offline" or policy == "dark" then return false, policy end
   if policy == "always" then return true, "always" end
   if policy == "rotating" then return rotatingOn(n, now), "rotating" end
-  local reach = (n.engageRange > 0 and n.engageRange or n.detectionRange) * d.cueFactor
+  local reach = E.cueBase(n) * d.cueFactor
   if policy == "cued" then
     local tr, dist
-    local byWta = n.net.wtaActive and n.linked and not n.autonomous and M.wta ~= nil
+    -- WTA cues only its shooters; a gun radar (Fire Can) on cued EMCON is cued by the nearest track like an EW-fed site
+    local byWta = WTA_KINDS[n.kind] and n.net.wtaActive and n.linked and not n.autonomous and M.wta ~= nil
     if byWta then
       tr, dist = M.wta.targetFor(n)           -- a WTA network cues only the shooters it assigned (DESIGN 4.3)
     else
@@ -149,8 +188,18 @@ function E.want(n, policy, now)
       em.lastCue = now
       local delay = (d.cueDelay[n.tier] or d.cueDelay.REG) + (n.feedDelay or 0) + (n.linkDelay or 0)  -- mutate: ok coverage always sets feedDelay; tiers always present
       -- ambush: the crew is ready from the cue on, but the radar waits until the target is firmly in the ring
-      local ring = (M.wta and (n.kind == "BATTERY" or n.kind == "PD") and M.wta.envelope(n).R or n.engageRange) * d.ambush  -- mutate: ok every built network has the wta module
-      if not em.on and dist > ring then return false, string_format("ambush: %s at %.0f km", M.tracks.label(tr), dist / 1000) end  -- mutate: ok km in the log text
+      if not em.on then
+        local p = tr.pos
+        if d.cueSource == "ew" then
+          -- a dark radar comes up only on an early-warning plot inside the ring, judged where the EW puts the target
+          p = M.tracks.ewPlot(tr, now)
+          if not p then return false, string_format("no EW plot of %s", M.tracks.label(tr)) end
+          local dx, dz = p.x - n.pos.x, p.z - n.pos.z
+          dist = math.sqrt(dx * dx + dz * dz)
+        end
+        local ring = E.ring(n, p and p.y and n.pos.y and (p.y - n.pos.y)) * d.ambush
+        if dist > ring then return false, string_format("ambush: %s at %.0f km", M.tracks.label(tr), dist / 1000) end  -- mutate: ok km in the log text
+      end
       if byWta then
         if now - em.cuedAt >= delay then return true, string_format("assigned %s, %.0f km", M.tracks.label(tr), dist / 1000) end  -- mutate: ok km in the log text
         return em.on == true, "cue pending"
@@ -209,6 +258,7 @@ function E.onShot(e)
   if not (n and n.emcon) then return end
   n.emcon.shots = n.emcon.shots or {}
   n.emcon.shots[#n.emcon.shots + 1] = { weapon = e.weapon, t = M.now() }
+  if n.dry and M.wta then M.wta.rearm(n, "launched again") end
 end
 
 local function apply(n, on, reason, now)

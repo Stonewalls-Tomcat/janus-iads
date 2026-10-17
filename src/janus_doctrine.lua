@@ -15,7 +15,14 @@
 --   cueHold          a cued radar stays up this long after the last track leaves
 --   ambush           a cued radar only comes up once its target is inside ambush x its engagement range: the crew
 --                    gets ready from cueFactor x range, but stays dark until the target is firmly in the ring
---                    (owner, 2026-10-01: Soviet / Russian 0.8, NATO / US 1.0, Vietnam 0.7)
+--                    (owner, 2026-10-01: Soviet / Russian 0.8, Vietnam 0.7; 2026-10-17: NATO / US 1.3 = up before
+--                    the zone, no ambush). Above 1 the WTA's `lead` still decides: a battery is cued only for a target
+--                    it can reach within `lead` seconds
+--   cueSource        what may bring a dark cued battery up: "ew" = only an early-warning plot (EW radar or AEW) of
+--                    the target inside the ambush ring, measured at the EW plot (owner, 2026-10-17: Soviet PVO
+--                    practice - target designation comes from the radiotechnical troops); "any" = any radar on the
+--                    network picture (a gun radar or another battery may cue it). Without EW cover the doctrine's
+--                    autonomous policy applies as before.
 --   emcon            policy per node kind while linked to command:
 --                      "always" (emit all the time), "dark" (never emit), "cued" (emit when the network cues it),
 --                      "periodic" (emit on/off on a timer), "rotating" (EW radars take turns)
@@ -82,7 +89,7 @@ local BASE = {
   autonomyDelay = TIER(180, 120, 60, 30),
   cueDelay = TIER(12, 6, 3, 2),
   cueFactor = 1.3, cueHold = 30, minOn = 15,  -- mutate: ok tuning
-  ambush = 1.0,
+  ambush = 1.0, cueSource = "any",
   emcon = { EW = "always", BATTERY = "cued", PD = "cued", AAA = "always", NAVAL = "always", C2 = "always" },
   autonomous = { EW = "always", BATTERY = "periodic", PD = "periodic", AAA = "always", NAVAL = "always", C2 = "always" },
   periodic = { on = 20, off = 40 },
@@ -134,7 +141,8 @@ M.deriveDoctrine = derive
 M.Doctrines = {
   -- Centralised control, strict EMCON: EW always up, SAMs dark until the command post cues them, slow to act alone.
   SOVIET_PVO_1985 = derive(BASE, {
-    name = "SOVIET_PVO_1985", ambush = 0.8,
+    name = "SOVIET_PVO_1985", cueSource = "ew", ambush = 0.8,
+    emcon = { AAA = "cued" },   -- Fire Can only on an EW cue inside its tracking range (owner, 2026-10-17)
     autonomyDelay = TIER(300, 180, 120, 60),
     autonomous = { BATTERY = "periodic", PD = "periodic" },
     periodic = { on = 15, off = 60 },
@@ -148,10 +156,10 @@ M.Doctrines = {
   }),
   -- Faster autonomy, EW radars rotate to spread their exposure, point defence stays close to always-on.
   RUSSIA_MODERN = derive(BASE, {
-    name = "RUSSIA_MODERN", ambush = 0.8,
+    name = "RUSSIA_MODERN", cueSource = "ew", ambush = 0.8,
     autonomyDelay = TIER(120, 60, 30, 20),
     cueDelay = TIER(8, 4, 2, 1),
-    emcon = { EW = "rotating", PD = "cued" },
+    emcon = { EW = "rotating", PD = "cued", AAA = "cued" },
     rotating = { share = 0.5, period = 90 },
     periodic = { on = 20, off = 30 },
     c2LossCue = { mode = "voice", range = 80000, delay = TIER(45, 30, 20, 15) },
@@ -165,6 +173,9 @@ M.Doctrines = {
   -- Delegated authority: batteries act on their own sooner; AWACS-led picture.
   NATO_COLDWAR = derive(BASE, {
     name = "NATO_COLDWAR", fighterControl = "aew", awacsTakeover = true,
+    -- NATO / US practice (owner, 2026-10-17): no ambush - the battery is brought up as a network plot (CRC, AWACS,
+    -- Link 16) nears its zone, so it is locked and fires at maximum range with time to shoot-look-shoot
+    ambush = 1.3,
     autonomyDelay = TIER(90, 60, 30, 20),
     autonomous = { BATTERY = "periodic", PD = "always" },
     c2LossCue = { mode = "datalink", range = 150000, delay = TIER(15, 10, 6, 4) },
@@ -176,6 +187,9 @@ M.Doctrines = {
   -- Data-linked picture, fast reactions, point defence always up around protected assets.
   US_MODERN = derive(BASE, {
     name = "US_MODERN", fighterControl = "aew", awacsTakeover = true,
+    -- NATO / US practice (owner, 2026-10-17): no ambush - the battery is brought up as a network plot (CRC, AWACS,
+    -- Link 16) nears its zone, so it is locked and fires at maximum range with time to shoot-look-shoot
+    ambush = 1.3,
     autonomyDelay = TIER(60, 30, 20, 10),
     cueDelay = TIER(6, 3, 2, 1),
     emcon = { PD = "always" },
@@ -191,7 +205,8 @@ M.Doctrines = {
   }),
   -- North Vietnam 1965-72: Fan Song emits for seconds only, sites cued by early warning, AAA always ready.
   NVA_VIETNAM_1965_72 = derive(BASE, {
-    name = "NVA_VIETNAM_1965_72", ambush = 0.7,
+    name = "NVA_VIETNAM_1965_72", cueSource = "ew", ambush = 0.7,
+    emcon = { AAA = "cued" },   -- Fire Can on/off discipline (Nalty: on-air time cut from 10-12 to under 3 min)
     cueFactor = 1.0, cueHold = 15, minOn = 8,
     autonomyDelay = TIER(240, 150, 90, 60),
     periodic = { on = 10, off = 60 },
@@ -226,6 +241,65 @@ M.Doctrines = {
     arm = { confirmScans = 5, reaction = TIER(15, 10, 6, 4), netDelay = TIER(30, 20, 15, 10) },  -- mutate: ok tuning
   }),
 }
+
+-- Doctrinal reach per shooter type (owner, 2026-10-17; sources in docs/REACH.md). DCS ThreatRange
+-- is often the ballistic or best-case figure (KS-19 20 km, S-300PS 120 km, Buk-M1 50 km); these are the far boundary
+-- of the kill zone against a fighter: `hi` for a target at or above REACH_HIGH over the site, `lo` (where sourced) at
+-- or below REACH_LOW, linear between. `ceil` caps a gun's effective ceiling; `track` is a gun-laying radar's tracking
+-- range (its cued EMCON ring). The value used is never larger than the DCS figure. The network's engagement range,
+-- the WTA Pk envelope and the EMCON ambush ring all read this table.
+M.REACH_LOW, M.REACH_HIGH = 1000, 3000   -- mutate: ok tuning
+M.Reach = {
+  -- Soviet / Russian SAMs
+  ["S-300PS 5P85C ln"] = { hi = 75000, lo = 40000 },   -- 5V55R 75 km; low targets: 30N6 on 40V6M mast horizon ~43 km
+  ["S-300PS 5P85D ln"] = { hi = 75000, lo = 40000 },
+  ["S-200_Launcher"]   = { hi = 150000, lo = 40000 },  -- vs fighters (240-255 km only vs large aircraft); low approx
+  ["S_75M_Volhov"]     = { hi = 35000, lo = 18000 },   -- V-755 ~30-35 km vs fighters (43 km vs subsonic only); low 15-20
+  ["5p73 s-125 ln"]    = { hi = 17000, lo = 10000 },   -- 5V27 17 km (22-25 km only vs subsonic); low ~10 km
+  ["Kub 2P25 ln"]      = { hi = 24000 },               -- 3M9 4-24 km
+  ["SA-11 Buk LN 9A310M1"] = { hi = 35000 },           -- Buk-M1 3-35 km (DCS 50 km is the M2 figure)
+  ["Osa 9A33 ln"]      = { hi = 10000 },               -- Osa-AK 1.5-10 km
+  -- Soviet guns (effective, radar-directed)
+  ["KS-19"]            = { hi = 12000, ceil = 11000 }, -- 12.6 km slant with SON-9 (20 km is ballistic)
+  ["S-60_Type59_Artillery"] = { hi = 6000, ceil = 5000 },
+  ["ZSU-23-4 Shilka"]  = { hi = 2500, ceil = 2000 },
+  ["ZU-23 Emplacement"] = { hi = 2000, ceil = 1500 },
+  ["ZU-23 Emplacement Closed"] = { hi = 2000, ceil = 1500 },
+  ["ZU-23 Insurgent"]  = { hi = 2000, ceil = 1500 },
+  ["ZU-23 Closed Insurgent"] = { hi = 2000, ceil = 1500 },
+  ["Ural-375 ZU-23"]   = { hi = 2000, ceil = 1500 },
+  ["Ural-375 ZU-23 Insurgent"] = { hi = 2000, ceil = 1500 },
+  ["HL_ZU-23"]         = { hi = 2000, ceil = 1500 },
+  ["tt_ZU-23"]         = { hi = 2000, ceil = 1500 },
+  ["ZSU_57_2"]         = { hi = 4000, ceil = 3000 },   -- optical only
+  ["SON_9"]            = { track = 35000 },            -- Fire Can: reliable tracking range (55-80 km detection)
+  -- Chinese
+  ["HQ-7_LN_SP"]       = { hi = 12000 },               -- 0.7-12 km vs aircraft (15 km vs helicopters)
+  ["HQ-7_LN_P"]        = { hi = 12000 },
+  -- WWII light guns (heavy guns: DCS lists them shorter than their real reach, so DCS stands)
+  ["flak30"]           = { hi = 2000, ceil = 2000 },
+  ["flak38"]           = { hi = 2000, ceil = 2000 },   -- Flakvierling: 2.2 km effective vertical
+  ["M45_Quadmount"]    = { hi = 800, ceil = 800 },     -- effective 500-800 yd
+  ["M1_37mm"]          = { hi = 2000, ceil = 1500 },   -- 1.1 km on-carriage, 2 km with director
+  ["Type_96_25mm_AA"]  = { hi = 1000, ceil = 1000 },   -- beyond 2 km "completely ineffective"; effective ~1 km
+  ["Type_94_25mm_AA_Truck"] = { hi = 1000, ceil = 1000 },
+}
+
+-- The reach entry for a DCS type, or nil: settings REACH = false uses the DCS figures only; a REACH table in the
+-- settings replaces entries by type (a type mapped to false has none).
+function M.reachFor(t)
+  local s = M.settings and M.settings.REACH
+  if s == false then return nil end
+  if type(s) == "table" and s[t] ~= nil then return s[t] or nil end
+  return M.Reach[t]
+end
+
+-- Reach of a shooter at target height h (m above the site); hi when h is unknown.
+function M.reachAt(hi, lo, h)
+  if not lo or lo >= hi or not h or h >= M.REACH_HIGH then return hi end
+  if h <= M.REACH_LOW then return lo end
+  return lo + (hi - lo) * (h - M.REACH_LOW) / (M.REACH_HIGH - M.REACH_LOW)
+end
 
 -- Resolve a doctrine setting (profile name or table) to a full profile. Unknown names fall back with a warning.
 function M.getDoctrine(nameOrTable, fallback)
