@@ -615,5 +615,21 @@ do
   check(not F.logContains("ERROR JANUS"), "block 11: no Janus errors")
 end
 
+-- ---------------------------------------------------------------- 99. default config smoke (doctrinal reach on)
+-- Every other block pins REACH = false; this one loads Janus as a mission would, with the default reach table.
+do
+  F.reset()
+  F.addGroup{ name = "EW North", units = { { type = "55G6 EWR", x = 20000, z = 0 } } }
+  sa10("SAM SA-10 Hama", 50000, 0)
+  local b = bandit("Viper Smoke", 90000, 0)     -- 40 km from the SA-10
+  F.sees["EW North"] = { b }
+  JANUS_SETTINGS = {}
+  assert(loadfile(JANUS_FILE))()
+  F.run(90)
+  check(JANUS.Reach ~= nil and node("SAM SA-10 Hama").engageRange ~= nil, "default config: reach table loaded, SA-10 has a range")
+  check(F.emitting("SAM SA-10 Hama"), "default config: SA-10 up on a bandit 40 km out")
+  check(not F.logContains("ERROR JANUS"), "default config: no Janus errors")
+end
+
 print(string.format("test_phase2: %d passed, %d failed", passed, failed))
 if failed > 0 then os.exit(1) end
