@@ -183,7 +183,7 @@ local function refreshAmmo(n)
       end
     elseif n.dry and not n.dryNoted then
       -- DCS can report rounds again on spent launchers (Breakwater 2026-10-16: an empty SA-10 read as loaded,
-      -- was cued twice and never fired). A dry battery stays dry until it launches again (W.rearm).
+      -- was cued twice and never fired). A dry battery stays dry until it launches again (W.rearm), or a resupply script calls JANUS.wta.rearm.
       n.dryNoted = true
       M.info("wta", string_format("%s %s: DCS reports %d missile(s) after running dry - held dry until it fires",
         n.net.key, n.name, total))
@@ -197,6 +197,7 @@ end
 function W.armed(n) return not n.dry or n.guns == true end
 
 -- A dry battery is loaded again: it launched (emcon's S_EVENT_SHOT) or a script resupplied it (JANUS.wta.rearm).
+-- There is no time rule (owner, 2026-11-02): a resupply script must call JANUS.wta.rearm, or the latch holds all mission.
 function W.rearm(n, why)
   if type(n) == "string" then n = M.net.nodes[n] end
   if not (n and n.dry) then return false end

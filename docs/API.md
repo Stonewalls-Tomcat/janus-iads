@@ -66,8 +66,15 @@ Your function runs inside Janus's error guard: an error in it is logged and neve
 | `JANUS.setHold(site, on)` | `true`: the site never goes dark for an ARM (the `[hold]` tag) |
 | `JANUS.addGroup(groupName)` | take a group spawned by another script now (Janus also picks up named groups at their birth event) |
 | `JANUS.spawnBattery(preset, point [, opts])` | below |
+| `JANUS.wta.rearm(site [, why])` | clears the dry-battery latch (site name or node); returns false if the site was not dry. **A resupply script must call this** after it reloads a battery's launchers (below) |
 
 These work once Janus has started (1 s after loading); before that there are no sites and they return false.
+
+**Resupply and the dry latch.** DCS's `getAmmo` reports missiles again on spent SAM launchers, so once Janus counts a
+battery's missiles at 0 it latches the battery dry and does not trust `getAmmo` again. Only two things clear the latch:
+the battery launches again, or a script calls `JANUS.wta.rearm(site)`. Janus has no reload timer, so a battery reloaded
+by a script that does not call `rearm` stays dark for the rest of the mission under cued EMCON. Call `rearm` when the
+reload is complete, not when it starts (a realistic reload delay is the resupply script's job).
 
 ## Reading
 | Call | Returns |

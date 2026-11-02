@@ -313,7 +313,8 @@ Janus is how Wild Weasels did it: one flight suppresses it, a DEAD flight kills 
   range is the doctrinal reach at the target's height (`JANUS.Reach`, docs/REACH.md), not the DCS ThreatRange.
   Under `cueSource = "ew"` (Soviet, Russian, NVA), only a fresh early-warning plot inside the ring brings the radar up,
   judged at the EW's position for the target. Gun radars (Fire Can) are cued the same way from their tracking range.
-  A battery that ran dry stays dry until it launches again. The crew is ready from the cue (cueFactor
+  A battery that ran dry stays dry until it launches again or a resupply script calls `JANUS.wta.rearm` (owner,
+  2026-11-02: no time rule; documented in docs/API.md). The crew is ready from the cue (cueFactor
   x range, cue delay counted from then); once up, the ring does not switch it off (cue hold applies).
 - **EW and AWACS watch.** They hold the picture and pass detected ARMs over the network (doctrine netDelay).
 - **Protection.** A SAM goes dark only for an anti-radiation weapon that it, or the network (EW, AWACS, other sites),
