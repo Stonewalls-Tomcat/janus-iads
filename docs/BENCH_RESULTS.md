@@ -222,6 +222,14 @@ FULL scored 8 PASS and 1 FAIL; the FAIL was the bench's own timing (an A-50 "gap
 destroyed **group** node reaches `nodeLost` on Janus's next network pass (up to 5 s after `S_EVENT_DEAD`); a static
 node's `S_EVENT_DEAD` is handled at once. Subscribe to the event rather than sampling on a clock.
 
+**J0 closed (2026-11-02, Janus Lead): 9/9.** The timing check is fixed in the GCI test (1.0.1: the A-50 "gap" check
+now samples after Janus's `nodeLost`, not on a clock). Rerun on dcs-missions main `b0f7798` (janus-gci-seam landed),
+test server via dcs-testq, every setup passing with 0 script errors:
+FULL 9/9 `20261102-090536-GCIJ-bench-FULL-11-02-16f5345c` (check 2 "Soviet A-50: reduced with no post, full again
+under the reserve" PASS, every gap sample "reduced", every after sample "full");
+NOJANUS 3/3 `20261102-090536-GCIJ-bench-NOJANUS-11-02-dfddf920`; NOGCI 1/1 `20261102-090536-GCIJ-bench-NOGCI-11-02-810ce913`;
+kill switch 9/9 `20261102-090537-GCIJ-bench-KILLSW-11-02-13e475ee`. Gate for N4b (`StonewallC_gci_janus.lua`) is met.
+
 ## Benches 04 (run 3) and 05 (run 3) on DCS 2.9.30 (2026-09-30)
 Current Janus (Phase 3 included), DCS 2.9.30.28536, queue jobs `20260930-213948-*`, **0 Janus errors** in both.
 Logs `I:\Claude-Workspace\logs\janus_bench0{4,5}_dcs2930_20260930.log`.
